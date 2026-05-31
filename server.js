@@ -99,49 +99,6 @@ View in dashboard: http://localhost:${process.env.PORT || 3000}/dashboard.html
   await mailer.sendMail(mailOptions);
 }
 
-// ─── TEAMS ────────────────────────────────────────────────────────────────────
-async function sendTeamsNotification(submission) {
-  if (!process.env.TEAMS_WEBHOOK_URL) return;
-  const d = submission.data;
-  const name = d.name || `${d.firstName || ''} ${d.lastName || ''}`.trim() || 'Unknown';
-  const type = d.quoteType === 'home' ? '🏠 Home' : '🚗 Auto';
-
-  const card = {
-    type: 'message',
-    attachments: [{
-      contentType: 'application/vnd.microsoft.card.adaptive',
-      content: {
-        '$schema': 'http://adaptivecards.io/schemas/adaptive-card.json',
-        type: 'AdaptiveCard',
-        version: '1.4',
-        body: [
-          { type: 'TextBlock', size: 'Large', weight: 'Bolder', text: `${type} Quote Request` },
-          { type: 'FactSet', facts: [
-            { title: 'Name', value: name },
-            { title: 'Phone', value: d.phone || '—' },
-            { title: 'Email', value: d.email || '—' },
-            { title: 'ZIP', value: d.zip || '—' },
-            ...(d.year ? [{ title: 'Vehicle', value: `${d.year} ${d.make} ${d.model}` }] : []),
-            { title: 'Coverage', value: d.coverageType || '—' },
-            { title: 'Incidents', value: d.incidents || 'None' },
-          ]},
-        ],
-        actions: [{
-          type: 'Action.OpenUrl',
-          title: 'Open Dashboard',
-          url: `http://localhost:${process.env.PORT || 3000}/dashboard.html`,
-        }],
-      },
-    }],
-  };
-
-  await fetch(process.env.TEAMS_WEBHOOK_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(card),
-  });
-}
-
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
 
 // POST /api/quote — save a new submission
@@ -160,15 +117,10 @@ app.post('/api/quote', upload.single('policy'), async (req, res) => {
   saveDB(db);
   res.json({ success: true, id: submission.id });
 
-  // Fire notifications async (don't block response)
-  Promise.allSettled([
-    sendSubmissionEmail(submission),
-    sendTeamsNotification(submission),
-  ]).then(results => {
-    results.forEach((r, i) => {
-      if (r.status === 'rejected') console.error(`Notification ${i} failed:`, r.reason?.message);
-    });
-  });
+  // Fire email notification async (don't block response)
+  sendSubmissionEmail(submission).catch(err =>
+    console.error('Email notification failed:', err.message)
+  );
 });
 
 // GET /api/quotes — list all submissions
@@ -238,6 +190,5 @@ server.listen(PORT, () => {
   console.log(`\n🛡️  OKCIB Quote Server running at http://localhost:${PORT}`);
   console.log(`📋  Dashboard: http://localhost:${PORT}/dashboard.html`);
   console.log(`📧  Email notifications: ${process.env.EMAIL_USER ? '✅ configured' : '⚠️  not configured (add EMAIL_USER + EMAIL_PASS to .env)'}`);
-  console.log(`💬  Teams notifications: ${process.env.TEAMS_WEBHOOK_URL ? '✅ configured' : '⚠️  not configured (add TEAMS_WEBHOOK_URL to .env)'}`);
   console.log(`\nPress Ctrl+C to stop\n`);
 });
