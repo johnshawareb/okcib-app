@@ -1,0 +1,17 @@
+# Environment variables — never commit these
+.env
+
+# Dependencies
+node_modules/
+
+# Uploaded files & submissions data
+data/uploads/
+data/submissions.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+server-test.log
