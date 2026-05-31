@@ -261,30 +261,14 @@ function HomePage({ navigate }) {
         <div className="absolute inset-0 opacity-10" style={{backgroundImage:'radial-gradient(circle at 20% 50%, #60a5fa 0%, transparent 50%), radial-gradient(circle at 80% 20%, #e81c1c 0%, transparent 40%)'}} />
         <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-36 text-center">
 
-          {/* Logo */}
-          <div className="flex justify-center mb-8">
-            <div className="bg-white rounded-2xl px-8 py-4 shadow-2xl inline-block">
-              <img src="logo.png" alt="OKC Insurance Brokers" className="h-16 sm:h-20 w-auto object-contain"
-                onError={e => { e.target.parentElement.style.display='none'; }}
-              />
-            </div>
-          </div>
-
           <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur border border-white/20 rounded-full px-4 py-1.5 text-sm mb-8">
             <span className="w-2 h-2 bg-green-400 rounded-full pulse-dot inline-block" />
             Oklahoma's Trusted Independent Broker
           </div>
 
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black leading-tight text-white mb-6 tracking-tight">
+          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black leading-tight text-white mb-12 tracking-tight">
             Stop Overpaying<br/><span style={{color:'#e81c1c'}}>For Insurance.</span>
           </h1>
-
-          <p className="text-white/80 text-xl sm:text-2xl font-semibold mb-4 max-w-3xl mx-auto leading-relaxed">
-            We shop <strong className="text-white">7 top carriers</strong> side-by-side and find you the best rate — in minutes.
-          </p>
-          <p className="text-white/50 text-base mb-12 max-w-xl mx-auto">
-            Progressive · GEICO · Mercury · Root · Liberty Mutual · Foremost · National General
-          </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <button onClick={() => navigate('/auto-quote')} className="text-white font-black px-10 py-5 rounded-2xl transition-all shadow-2xl flex items-center justify-center gap-3 text-lg" style={{background:'#2563eb'}}>
