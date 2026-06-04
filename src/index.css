@@ -31,3 +31,13 @@
     @apply w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-brand-500 focus:outline-none transition-colors duration-200 text-gray-900 bg-white cursor-pointer;
   }
 }
+
+/* Remove centered hero logo display */
+@layer utilities {
+  /* Hide any centered white rounded logo box in hero */
+  div[style*="flex"][style*="justify-center"] > div[style*="rounded"],
+  div[style*="flex"][style*="center"] > div[style*="white"][style*="rounded"],
+  .hero-logo {
+    display: none !important;
+  }
+}
