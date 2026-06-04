@@ -97,8 +97,8 @@ export default function AutoQuote() {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">VIN (optional)</label>
-                <input className="input-field" placeholder="17-character VIN" value={form.vin} onChange={e => set('vin', e.target.value.toUpperCase())} maxLength={17} />
-                <p className="text-xs text-gray-400 mt-1">Providing the VIN helps us get the most accurate quote</p>
+                <input className="input-field" placeholder="Enter all 17 characters" value={form.vin} onChange={e => set('vin', e.target.value.toUpperCase())} maxLength={17} />
+                <p className="text-xs text-gray-400 mt-1">Enter your 17-digit VIN for an accurate quote</p>
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">Primary use</label>
