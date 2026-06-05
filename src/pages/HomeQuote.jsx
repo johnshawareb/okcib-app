@@ -26,9 +26,9 @@ export default function HomeQuote() {
   const [step, setStep] = useState(0)
   const [form, setForm] = useState({
     address: '', city: '', state: 'Oklahoma', zip: '',
-    homeType: '', yearBuilt: '', sqft: '', stories: '',
+    homeType: '', yearBuilt: '', stories: '',
     roofAge: '', roofMaterial: '', foundation: '', garage: '',
-    coverageAmount: '200000', deductible: '1000', personalProperty: true,
+    deductible: '1000', personalProperty: true,
     liability: true, waterBackup: false, scheduledProperty: false,
     name: '', email: '', phone: '', notes: '',
   })
@@ -41,8 +41,8 @@ export default function HomeQuote() {
 
   const canNext = () => {
     if (step === 0) return form.address && form.city && form.zip
-    if (step === 1) return form.homeType && form.yearBuilt && form.sqft
-    if (step === 2) return form.coverageAmount
+    if (step === 1) return form.homeType && form.yearBuilt
+    if (step === 2) return true
     if (step === 3) return form.name && form.email && form.phone
     return true
   }
@@ -116,15 +116,9 @@ export default function HomeQuote() {
                   ))}
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Year Built *</label>
-                  <input className="input-field" placeholder="e.g. 2005" maxLength={4} value={form.yearBuilt} onChange={e => set('yearBuilt', e.target.value)} />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Square Footage *</label>
-                  <input className="input-field" placeholder="e.g. 1800" value={form.sqft} onChange={e => set('sqft', e.target.value)} />
-                </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Year Built *</label>
+                <input className="input-field" placeholder="e.g. 2005" maxLength={4} value={form.yearBuilt} onChange={e => set('yearBuilt', e.target.value)} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -177,20 +171,6 @@ export default function HomeQuote() {
           {step === 2 && (
             <div className="space-y-5">
               <h2 className="text-lg font-bold text-gray-900">Coverage Preferences</h2>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Estimated Dwelling Coverage</label>
-                <select className="select-field" value={form.coverageAmount} onChange={e => set('coverageAmount', e.target.value)}>
-                  <option value="100000">$100,000</option>
-                  <option value="150000">$150,000</option>
-                  <option value="200000">$200,000</option>
-                  <option value="250000">$250,000</option>
-                  <option value="300000">$300,000</option>
-                  <option value="350000">$350,000</option>
-                  <option value="400000">$400,000+</option>
-                  <option value="unsure">Not sure — agent will advise</option>
-                </select>
-                <p className="text-xs text-gray-400 mt-1">This is the cost to rebuild, not the market value of your home</p>
-              </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Deductible Preference</label>
                 <div className="grid grid-cols-3 gap-2">
