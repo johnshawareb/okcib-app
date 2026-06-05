@@ -68,14 +68,15 @@
   }
 }
 
-/* Remove centered hero logo */
-section:first-of-type > div > div > div:not(:nth-child(1)):not(:nth-child(2)) {
-  display: none !important;
-}
-
-/* Alternative: hide any white rounded boxes in hero */
-section.bg-gradient-to-br > div > div > div[style*="white"],
-.bg-white.rounded-3xl:not(.card),
-div.w-96.bg-white.rounded-3xl {
+/* Remove any logo or white rounded boxes from hero section */
+section:first-child > div > div > div:first-child > div[style*="white"],
+section:first-child > div > div > div:first-child > div[style*="bg-white"],
+section:first-child > div > div > div:first-child > div.bg-white,
+section:first-child > div > div > div:first-child > div[className*="bg-white"],
+section:first-child img[alt*="logo"],
+section:first-child img[src*="logo"],
+div.bg-white.rounded-2xl img[alt*="OKC"],
+div.bg-white img[alt*="OKC Insurance"],
+.flex.justify-center > div.bg-white {
   display: none !important;
 }
