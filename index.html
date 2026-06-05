@@ -498,6 +498,68 @@ function StepIndicator({ steps, current, color = 'blue' }) {
 }
 
 // ─── AUTO QUOTE ───────────────────────────────────────────────────────────────
+
+function VehicleBlock({prefix, label, form, set, sel, inp, lbl, years, makes}) {
+  return (
+  <div className="border border-gray-200 rounded-xl p-4 space-y-4">
+    <h3 className="font-semibold text-gray-800 text-sm">{label}</h3>
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div><label className={lbl}>Year *</label>
+        <select className={sel} value={form[`${prefix}year`]} onChange={e=>set(`${prefix}year`,e.target.value)}>
+          <option value="">Year</option>{years.map(y=><option key={y}>{y}</option>)}
+        </select></div>
+      <div><label className={lbl}>Make *</label>
+        <select className={sel} value={form[`${prefix}make`]} onChange={e=>set(`${prefix}make`,e.target.value)}>
+          <option value="">Make</option>{makes.map(m=><option key={m}>{m}</option>)}
+        </select></div>
+      <div><label className={lbl}>Model *</label>
+        <input className={inp} placeholder="Model" value={form[`${prefix}model`]} onChange={e=>set(`${prefix}model`,e.target.value)} /></div>
+    </div>
+    <div><label className={lbl}>VIN</label>
+      <input className={`${inp} text-xs tracking-tight`} placeholder="17-character VIN" type="text" maxLength="17" spellCheck="false" value={form[`${prefix}vin`]} onChange={e=>set(`${prefix}vin`,e.target.value.toUpperCase())} /></div>
+    <div className="grid grid-cols-2 gap-3">
+      <div><label className={lbl}>Financed / Lien Holder?</label>
+        <div className="flex gap-2">{['Yes','No'].map(v=><button key={v} type="button" className={`flex-1 py-2 rounded-lg border-2 text-sm font-medium transition-all ${form[`${prefix}financed`]===v?'border-blue-500 bg-blue-50 text-blue-700':'border-gray-200 text-gray-600 hover:border-blue-300'}`} onClick={()=>set(`${prefix}financed`,v)}>{v}</button>)}</div>
+      </div>
+      {prefix==='' && <div><label className={lbl}>Accidents/Violations (5 yrs)?</label>
+        <div className="flex gap-2">{['Yes','No'].map(v=><button key={v} type="button" className={`flex-1 py-2 rounded-lg border-2 text-sm font-medium transition-all ${form.accidents===v?'border-blue-500 bg-blue-50 text-blue-700':'border-gray-200 text-gray-600 hover:border-blue-300'}`} onClick={()=>set('accidents',v)}>{v}</button>)}</div>
+      </div>}
+    </div>
+    <div><label className={lbl}>Coverage</label>
+      <div className="flex gap-2">{['Liability Only','Comprehensive & Collision'].map(v=><button key={v} type="button" className={`flex-1 py-2 rounded-lg border-2 text-xs font-medium transition-all ${form[prefix===''?'coverageType':`${prefix}coverage`]===v?'border-blue-500 bg-blue-50 text-blue-700':'border-gray-200 text-gray-600 hover:border-blue-300'}`} onClick={()=>set(prefix===''?'coverageType':`${prefix}coverage`,v)}>{v}</button>)}</div>
+    </div>
+  </div>
+  );
+}
+
+function DriverBlock({prefix, label, form, set, sel, inp, lbl, states}) {
+  return (
+  <div className="border border-gray-200 rounded-xl p-4 space-y-4">
+    <h3 className="font-semibold text-gray-800 text-sm">{label}</h3>
+    <div className="grid grid-cols-2 gap-3">
+      <div><label className={lbl}>First Name *</label><input className={inp} placeholder="First" value={form[`${prefix}first`]} onChange={e=>set(`${prefix}first`,e.target.value)} /></div>
+      <div><label className={lbl}>Last Name *</label><input className={inp} placeholder="Last" value={form[`${prefix}last`]} onChange={e=>set(`${prefix}last`,e.target.value)} /></div>
+    </div>
+    <div className="grid grid-cols-2 gap-3">
+      <div><label className={lbl}>Date of Birth *</label><input type="date" className={inp} value={form[`${prefix}dob`]} onChange={e=>set(`${prefix}dob`,e.target.value)} /></div>
+      <div><label className={lbl}>Gender</label>
+        <select className={sel} value={form[`${prefix}gender`]} onChange={e=>set(`${prefix}gender`,e.target.value)}>
+          <option value="">Select</option><option>Male</option><option>Female</option>
+        </select></div>
+    </div>
+    <div className="grid grid-cols-2 gap-3">
+      <div><label className={lbl}>Driver's License #</label><input className={inp} placeholder="License number" value={form[`${prefix}license`]} onChange={e=>set(`${prefix}license`,e.target.value)} /></div>
+      <div><label className={lbl}>License State</label>
+        <select className={sel} value={form[`${prefix}licenseState`]} onChange={e=>set(`${prefix}licenseState`,e.target.value)}>
+          {states.map(s=><option key={s}>{s}</option>)}
+        </select></div>
+    </div>
+    <div><label className={lbl}>Occupation / Retired</label><input className={inp} placeholder="e.g. Teacher, Nurse, Retired" value={form[`${prefix}occupation`]} onChange={e=>set(`${prefix}occupation`,e.target.value)} /></div>
+  </div>
+  );
+}
+
+
 function AutoQuotePage({ navigate }) {
   const steps = ['Vehicle','Drivers','Coverage','Contact'];
   const [step, setStep] = useState(0);
@@ -561,61 +623,6 @@ function AutoQuotePage({ navigate }) {
   const makes = ['Acura','BMW','Buick','Chevrolet','Chrysler','Dodge','Ford','GMC','Honda','Hyundai','Jeep','Kia','Lexus','Mazda','Mercedes-Benz','Nissan','Ram','Subaru','Tesla','Toyota','Volkswagen','Other'];
   const states = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'];
 
-  const VehicleBlock = ({prefix, label}) => (
-    <div className="border border-gray-200 rounded-xl p-4 space-y-4">
-      <h3 className="font-semibold text-gray-800 text-sm">{label}</h3>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div><label className={lbl}>Year *</label>
-          <select className={sel} value={form[`${prefix}year`]} onChange={e=>set(`${prefix}year`,e.target.value)}>
-            <option value="">Year</option>{years.map(y=><option key={y}>{y}</option>)}
-          </select></div>
-        <div><label className={lbl}>Make *</label>
-          <select className={sel} value={form[`${prefix}make`]} onChange={e=>set(`${prefix}make`,e.target.value)}>
-            <option value="">Make</option>{makes.map(m=><option key={m}>{m}</option>)}
-          </select></div>
-        <div><label className={lbl}>Model *</label>
-          <input className={inp} placeholder="Model" value={form[`${prefix}model`]} onChange={e=>set(`${prefix}model`,e.target.value)} /></div>
-      </div>
-      <div><label className={lbl}>VIN</label>
-        <input className={`${inp} text-xs tracking-tight`} placeholder="17-character VIN" type="text" maxLength="17" spellCheck="false" value={form[`${prefix}vin`]} onChange={e=>set(`${prefix}vin`,e.target.value.toUpperCase())} /></div>
-      <div className="grid grid-cols-2 gap-3">
-        <div><label className={lbl}>Financed / Lien Holder?</label>
-          <div className="flex gap-2">{['Yes','No'].map(v=><button key={v} type="button" className={`flex-1 py-2 rounded-lg border-2 text-sm font-medium transition-all ${form[`${prefix}financed`]===v?'border-blue-500 bg-blue-50 text-blue-700':'border-gray-200 text-gray-600 hover:border-blue-300'}`} onClick={()=>set(`${prefix}financed`,v)}>{v}</button>)}</div>
-        </div>
-        {prefix==='' && <div><label className={lbl}>Accidents/Violations (5 yrs)?</label>
-          <div className="flex gap-2">{['Yes','No'].map(v=><button key={v} type="button" className={`flex-1 py-2 rounded-lg border-2 text-sm font-medium transition-all ${form.accidents===v?'border-blue-500 bg-blue-50 text-blue-700':'border-gray-200 text-gray-600 hover:border-blue-300'}`} onClick={()=>set('accidents',v)}>{v}</button>)}</div>
-        </div>}
-      </div>
-      <div><label className={lbl}>Coverage</label>
-        <div className="flex gap-2">{['Liability Only','Comprehensive & Collision'].map(v=><button key={v} type="button" className={`flex-1 py-2 rounded-lg border-2 text-xs font-medium transition-all ${form[prefix===''?'coverageType':`${prefix}coverage`]===v?'border-blue-500 bg-blue-50 text-blue-700':'border-gray-200 text-gray-600 hover:border-blue-300'}`} onClick={()=>set(prefix===''?'coverageType':`${prefix}coverage`,v)}>{v}</button>)}</div>
-      </div>
-    </div>
-  );
-
-  const DriverBlock = ({prefix, label}) => (
-    <div className="border border-gray-200 rounded-xl p-4 space-y-4">
-      <h3 className="font-semibold text-gray-800 text-sm">{label}</h3>
-      <div className="grid grid-cols-2 gap-3">
-        <div><label className={lbl}>First Name *</label><input className={inp} placeholder="First" value={form[`${prefix}first`]} onChange={e=>set(`${prefix}first`,e.target.value)} /></div>
-        <div><label className={lbl}>Last Name *</label><input className={inp} placeholder="Last" value={form[`${prefix}last`]} onChange={e=>set(`${prefix}last`,e.target.value)} /></div>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div><label className={lbl}>Date of Birth *</label><input type="date" className={inp} value={form[`${prefix}dob`]} onChange={e=>set(`${prefix}dob`,e.target.value)} /></div>
-        <div><label className={lbl}>Gender</label>
-          <select className={sel} value={form[`${prefix}gender`]} onChange={e=>set(`${prefix}gender`,e.target.value)}>
-            <option value="">Select</option><option>Male</option><option>Female</option>
-          </select></div>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div><label className={lbl}>Driver's License #</label><input className={inp} placeholder="License number" value={form[`${prefix}license`]} onChange={e=>set(`${prefix}license`,e.target.value)} /></div>
-        <div><label className={lbl}>License State</label>
-          <select className={sel} value={form[`${prefix}licenseState`]} onChange={e=>set(`${prefix}licenseState`,e.target.value)}>
-            {states.map(s=><option key={s}>{s}</option>)}
-          </select></div>
-      </div>
-      <div><label className={lbl}>Occupation / Retired</label><input className={inp} placeholder="e.g. Teacher, Nurse, Retired" value={form[`${prefix}occupation`]} onChange={e=>set(`${prefix}occupation`,e.target.value)} /></div>
-    </div>
-  );
 
   const canNext = () => {
     if (step===0) return form.year && form.make && form.model;
@@ -642,13 +649,13 @@ function AutoQuotePage({ navigate }) {
           {step===0 && (
             <div className="space-y-5">
               <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2"><CarIcon size={20} className="text-blue-500" /> Vehicle Information</h2>
-              <VehicleBlock prefix="" label="Vehicle 1" />
+              <VehicleBlock prefix="" label="Vehicle 1" form={form} set={set} sel={sel} inp={inp} lbl={lbl} years={years} makes={makes} />
               {!form.addVehicle2 && <button type="button" onClick={()=>set('addVehicle2',true)} className="w-full py-2 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-all">+ Add Vehicle 2</button>}
-              {form.addVehicle2 && <VehicleBlock prefix="v2" label="Vehicle 2" />}
+              {form.addVehicle2 && <VehicleBlock prefix="v2" label="Vehicle 2" form={form} set={set} sel={sel} inp={inp} lbl={lbl} years={years} makes={makes} />}
               {form.addVehicle2 && !form.addVehicle3 && <button type="button" onClick={()=>set('addVehicle3',true)} className="w-full py-2 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-all">+ Add Vehicle 3</button>}
-              {form.addVehicle3 && <VehicleBlock prefix="v3" label="Vehicle 3" />}
+              {form.addVehicle3 && <VehicleBlock prefix="v3" label="Vehicle 3" form={form} set={set} sel={sel} inp={inp} lbl={lbl} years={years} makes={makes} />}
               {form.addVehicle3 && !form.addVehicle4 && <button type="button" onClick={()=>set('addVehicle4',true)} className="w-full py-2 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-all">+ Add Vehicle 4</button>}
-              {form.addVehicle4 && <VehicleBlock prefix="v4" label="Vehicle 4" />}
+              {form.addVehicle4 && <VehicleBlock prefix="v4" label="Vehicle 4" form={form} set={set} sel={sel} inp={inp} lbl={lbl} years={years} makes={makes} />}
             </div>
           )}
 
@@ -686,11 +693,11 @@ function AutoQuotePage({ navigate }) {
                 </div>
               </div>
               {!form.addDriver2 && <button type="button" onClick={()=>set('addDriver2',true)} className="w-full py-2 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-all">+ Add Driver 2 (spouse / household member)</button>}
-              {form.addDriver2 && <DriverBlock prefix="d2" label="Driver 2" />}
+              {form.addDriver2 && <DriverBlock prefix="d2" label="Driver 2" form={form} set={set} sel={sel} inp={inp} lbl={lbl} states={states} />}
               {form.addDriver2 && !form.addDriver3 && <button type="button" onClick={()=>set('addDriver3',true)} className="w-full py-2 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-all">+ Add Driver 3</button>}
-              {form.addDriver3 && <DriverBlock prefix="d3" label="Driver 3" />}
+              {form.addDriver3 && <DriverBlock prefix="d3" label="Driver 3" form={form} set={set} sel={sel} inp={inp} lbl={lbl} states={states} />}
               {form.addDriver3 && !form.addDriver4 && <button type="button" onClick={()=>set('addDriver4',true)} className="w-full py-2 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-all">+ Add Driver 4</button>}
-              {form.addDriver4 && <DriverBlock prefix="d4" label="Driver 4" />}
+              {form.addDriver4 && <DriverBlock prefix="d4" label="Driver 4" form={form} set={set} sel={sel} inp={inp} lbl={lbl} states={states} />}
             </div>
           )}
 
