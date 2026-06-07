@@ -1013,6 +1013,40 @@ function HomeQuotePage({ navigate }) {
             </div>
           )}
 
+          {step===2 && (
+            <div className="space-y-5">
+              <h2 className="text-lg font-bold text-gray-900">Property Details</h2>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Primary Occupation *</label>
+                <input className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-yellow-500 focus:outline-none" placeholder="e.g. Teacher, Nurse, Retired" value={form.occupationOne} onChange={e=>set('occupationOne',e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Secondary Occupation (optional)</label>
+                <input className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-yellow-500 focus:outline-none" placeholder="e.g. Teacher, Nurse, Retired" value={form.occupationTwo} onChange={e=>set('occupationTwo',e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Dogs? *</label>
+                <div className="flex gap-2">
+                  {['Yes','No'].map(v=>(
+                    <button key={v} type="button"
+                      className={`flex-1 py-2 rounded-lg border-2 text-sm font-medium transition-all ${form.hasDogs===v?'border-yellow-500 bg-yellow-50 text-yellow-700':'border-gray-200 text-gray-600 hover:border-yellow-300'}`}
+                      onClick={()=>set('hasDogs',v)}>{v}</button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Pool? *</label>
+                <div className="flex gap-2">
+                  {['Yes','No'].map(v=>(
+                    <button key={v} type="button"
+                      className={`flex-1 py-2 rounded-lg border-2 text-sm font-medium transition-all ${form.hasPool===v?'border-yellow-500 bg-yellow-50 text-yellow-700':'border-gray-200 text-gray-600 hover:border-yellow-300'}`}
+                      onClick={()=>set('hasPool',v)}>{v}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           {step===3 && (
             <div className="space-y-5">
               <h2 className="text-lg font-bold text-gray-900">Coverage Preferences</h2>
