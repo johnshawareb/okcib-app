@@ -41,7 +41,7 @@ export default function HomeQuote() {
     hasPool: '', hasDogs: '', hasLosses: '', lossTypes: [],
     propertyOwnership: '', hasMortgage: '', shortTermRental: '', rentalDuration: '',
     // Coverage
-    discounts: [], insuranceProducts: [], currentCoverage: '', policyStartDate: '',
+    discounts: [], insuranceProducts: [], currentCoverage: '', policyStartDate: '', windHailDeductible: '',
     // Contact
     email: '', confirmEmail: '', phone: '',
     heardAboutUs: '', contactPreference: '', textOptIn: '', policyUpload: null,
@@ -381,6 +381,20 @@ export default function HomeQuote() {
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">Desired Policy Start Date *</label>
                 <input type="date" className="input-field" value={form.policyStartDate} onChange={e => set('policyStartDate', e.target.value)} />
+              </div>
+
+              <hr className="my-4" />
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Wind/Hail Deductible</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {['1%', '2%', '3%', '5%'].map(d => (
+                    <button key={d} type="button"
+                      className={`py-2 rounded-lg border-2 text-sm font-medium transition-all ${form.windHailDeductible === d ? 'border-gold-500 bg-gold-50 text-gold-700' : 'border-gray-200 text-gray-600 hover:border-gold-300'}`}
+                      onClick={() => set('windHailDeductible', d)}
+                    >{d}</button>
+                  ))}
+                </div>
               </div>
             </div>
           )}
