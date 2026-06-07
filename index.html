@@ -864,7 +864,7 @@ function AutoQuotePage({ navigate }) {
               </button>
             ) : <div/>}
             <button
-              onClick={async ()=>{ if(step<steps.length-1){ setStep(s=>s+1); } else { try{ const fd=new FormData(); const {policyFile,...data}=form; fd.append('data',JSON.stringify({...data,quoteType:'auto'})); if(policyFile) fd.append('policy',policyFile); await fetch('/api/quote',{method:'POST',body:fd}); }catch(e){} navigate('/thank-you?type=auto'); } }}
+              onClick={async ()=>{ if(step<steps.length-1){ setStep(s=>s+1); window.scrollTo(0,0); } else { try{ const fd=new FormData(); const {policyFile,...data}=form; fd.append('data',JSON.stringify({...data,quoteType:'auto'})); if(policyFile) fd.append('policy',policyFile); await fetch('/api/quote',{method:'POST',body:fd}); }catch(e){} navigate('/thank-you?type=auto'); } }}
               disabled={!canNext()}
               className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all ${canNext()?'text-white shadow-md':'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
               style={canNext()?{background:'#2563eb'}:{}}
@@ -1077,7 +1077,7 @@ function HomeQuotePage({ navigate }) {
               </button>
             ) : <div/>}
             <button
-              onClick={async ()=>{ if(step<steps.length-1){ setStep(s=>s+1); } else { try{ await fetch('/api/quote',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...form,quoteType:'home'})}); }catch(e){} navigate('/thank-you?type=home'); } }}
+              onClick={async ()=>{ if(step<steps.length-1){ setStep(s=>s+1); window.scrollTo(0,0); } else { try{ await fetch('/api/quote',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...form,quoteType:'home'})}); }catch(e){} navigate('/thank-you?type=home'); } }}
               disabled={!canNext()}
               className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all ${canNext()?'bg-yellow-500 hover:bg-yellow-600 text-white shadow-md':'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
             >
