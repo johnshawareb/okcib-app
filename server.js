@@ -84,7 +84,7 @@ View in dashboard: http://localhost:${process.env.PORT || 3000}/dashboard.html
 
   const mailOptions = {
     from: `"OKCIB Quote Bot" <${process.env.EMAIL_USER}>`,
-    to: process.env.SUBMISSION_EMAIL || 'submissions@okcib.com',
+    to: process.env.SUBMISSION_EMAIL || 'info@okcinsurancebrokers.com',
     subject: `New ${type} Quote — ${name} (${d.zip || ''})`,
     text: body,
   };
