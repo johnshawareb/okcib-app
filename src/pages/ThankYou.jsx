@@ -40,6 +40,21 @@ export default function ThankYou() {
           </ol>
         </div>
 
+        {/* Bundle offer */}
+        {type === 'home' && (
+          <div className="card p-6 mb-8 bg-blue-50 border-2 border-blue-200 rounded-xl">
+            <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <Car className="w-5 h-5 text-blue-600" /> Bundle & Save Up to 25%!
+            </h3>
+            <p className="text-sm text-gray-700 mb-4">
+              Combine your home and auto insurance with us for <strong>potential savings of 10–25%</strong> depending on your policies.
+            </p>
+            <Link to="/auto-quote" className="btn-primary w-full inline-flex items-center gap-2 justify-center text-sm">
+              <Car className="w-4 h-4" /> Get Your Free Auto Quote Now
+            </Link>
+          </div>
+        )}
+
         {/* Need it sooner */}
         <div className="card p-5 mb-8 bg-brand-50 border border-brand-100">
           <p className="text-sm text-brand-700 font-medium mb-2">Need a quote right away?</p>
