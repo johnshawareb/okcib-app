@@ -471,8 +471,13 @@ export default function HomeQuote() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Phone Number *</label>
-                <input type="tel" className="input-field" placeholder="(405) 555-0100" value={form.phone} onChange={e => set('phone', e.target.value)} />
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Upload Current Policy (optional)</label>
+                <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-gold-400 transition-colors">
+                  <Upload className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm text-gray-600">Click to upload or drag and drop</span>
+                  <input type="file" className="hidden" onChange={e => set('policyUpload', e.target.files?.[0] || null)} accept=".pdf,.jpg,.jpeg,.png" />
+                </label>
+                <p className="text-xs text-gray-500 mt-1">PDF, JPG, or PNG (helpful for comparison quotes)</p>
               </div>
 
               <div>
@@ -492,7 +497,12 @@ export default function HomeQuote() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Text Message Opt-In?</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Phone Number *</label>
+                <input type="tel" className="input-field" placeholder="(405) 555-0100" value={form.phone} onChange={e => set('phone', e.target.value)} />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Opt in to text messages?</label>
                 <div className="flex gap-2">
                   {['Yes', 'No'].map(v => (
                     <button key={v} type="button"
@@ -501,15 +511,6 @@ export default function HomeQuote() {
                     >{v}</button>
                   ))}
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Upload Old Policy (optional)</label>
-                <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-gold-400 transition-colors">
-                  <Upload className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm text-gray-600">Click to upload or drag and drop</span>
-                  <input type="file" className="hidden" onChange={e => set('policyUpload', e.target.files?.[0] || null)} accept=".pdf,.jpg,.jpeg,.png" />
-                </label>
               </div>
 
               <div className="bg-brand-50 border border-brand-200 rounded-xl p-4 text-xs text-brand-700">
