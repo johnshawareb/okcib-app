@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Home, ChevronRight, ChevronLeft, CheckCircle, Shield, Upload } from 'lucide-react'
 
@@ -46,6 +46,10 @@ export default function HomeQuote() {
     email: '', confirmEmail: '', phone: '',
     heardAboutUs: '', contactPreference: '', textOptIn: '', policyUpload: null,
   })
+
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [step])
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
   const toggleArray = (arr, val) => arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val]
