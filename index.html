@@ -626,7 +626,13 @@ function AutoQuotePage({ navigate }) {
 
   const canNext = () => {
     if (step===0) return form.year && form.make && form.model;
-    if (step===1) return form.firstName && form.lastName && form.dob;
+    if (step===1) {
+      const primaryDriver = form.firstName && form.lastName && form.dob;
+      if (form.maritalStatus === 'Married') {
+        return primaryDriver && form.d2first && form.d2last && form.d2dob;
+      }
+      return primaryDriver;
+    }
     if (step===2) return form.liability;
     if (step===3) return form.name && form.email && form.phone && form.zip;
     return true;
@@ -692,9 +698,10 @@ function AutoQuotePage({ navigate }) {
                   <div><label className={lbl}>Occupation / Retired</label><input className={inp} placeholder="e.g. Teacher, Retired" value={form.occupation} onChange={e=>set('occupation',e.target.value)} /></div>
                 </div>
               </div>
-              {!form.addDriver2 && <button type="button" onClick={()=>set('addDriver2',true)} className="w-full py-2 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-all">+ Add Driver 2 (spouse / household member)</button>}
-              {form.addDriver2 && <DriverBlock prefix="d2" label="Driver 2" form={form} set={set} sel={sel} inp={inp} lbl={lbl} states={states} />}
-              {form.addDriver2 && !form.addDriver3 && <button type="button" onClick={()=>set('addDriver3',true)} className="w-full py-2 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-all">+ Add Driver 3</button>}
+              {form.maritalStatus==='Married' && <DriverBlock prefix="d2" label="Driver 2 (Spouse) *" form={form} set={set} sel={sel} inp={inp} lbl={lbl} states={states} />}
+              {form.maritalStatus!=='Married' && !form.addDriver2 && <button type="button" onClick={()=>set('addDriver2',true)} className="w-full py-2 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-all">+ Add Driver 2 (other household member)</button>}
+              {form.maritalStatus!=='Married' && form.addDriver2 && <DriverBlock prefix="d2" label="Driver 2" form={form} set={set} sel={sel} inp={inp} lbl={lbl} states={states} />}
+              {(form.addDriver2 || form.maritalStatus==='Married') && !form.addDriver3 && <button type="button" onClick={()=>set('addDriver3',true)} className="w-full py-2 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-all">+ Add Driver 3</button>}
               {form.addDriver3 && <DriverBlock prefix="d3" label="Driver 3" form={form} set={set} sel={sel} inp={inp} lbl={lbl} states={states} />}
               {form.addDriver3 && !form.addDriver4 && <button type="button" onClick={()=>set('addDriver4',true)} className="w-full py-2 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-all">+ Add Driver 4</button>}
               {form.addDriver4 && <DriverBlock prefix="d4" label="Driver 4" form={form} set={set} sel={sel} inp={inp} lbl={lbl} states={states} />}
