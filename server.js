@@ -183,6 +183,11 @@ app.get('/api/agent/stream/:id', (req, res) => {
   });
 });
 
+// SPA fallback — serve index.html for all non-API routes
+app.get('*', (req, res) => {
+  res.sendFile(join(__dirname, 'index.html'));
+});
+
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`\n🛡️  OKCIB Quote Server running at http://localhost:${PORT}`);
