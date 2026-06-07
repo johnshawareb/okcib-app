@@ -46,10 +46,8 @@ function saveDB(db) {
 
 // ─── EMAIL ────────────────────────────────────────────────────────────────────
 const mailer = createTransport({
-  host: 'smtp.office365.com',
-  port: 587,
-  secure: false,
-  auth: {
+host: 'smtp.gmail.com',  port: 587,
+secure: true,  auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
@@ -96,7 +94,7 @@ View in dashboard: http://localhost:${process.env.PORT || 3000}/dashboard.html
       path: join(__dirname, 'data', 'uploads', submission.policyFile.filename),
     }];
   }
-  await mailer.sendMail(mailOptions);
+  try { await mailer.sendMail(mailOptions); } catch (err) { console.error('❌ Email failed:', err.message, err.code); }
 }
 
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
