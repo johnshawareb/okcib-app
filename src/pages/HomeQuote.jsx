@@ -41,7 +41,9 @@ export default function HomeQuote() {
     hasPool: '', hasDogs: '', hasLosses: '', lossTypes: [],
     propertyOwnership: '', hasMortgage: '', shortTermRental: '', rentalDuration: '',
     // Coverage
-    discounts: [], insuranceProducts: [], currentCoverage: '', policyStartDate: '', windHailDeductible: '',
+    dwellingCoverage: '', standardDeductible: '', windHailDeductible: '',
+    personalProperty: false, waterBackup: false, scheduledProperty: false, tornado: false,
+    discounts: [], insuranceProducts: [], currentCoverage: '', policyStartDate: '',
     // Contact
     email: '', confirmEmail: '', phone: '',
     heardAboutUs: '', contactPreference: '', textOptIn: '', policyUpload: null,
@@ -65,7 +67,7 @@ export default function HomeQuote() {
     if (step === 0) return form.firstName && form.lastName && form.dob
     if (step === 1) return form.address && form.city && form.zip
     if (step === 2) return form.homeType && form.yearBuilt && form.occupationOne
-    if (step === 3) return form.currentCoverage && form.policyStartDate
+    if (step === 3) return form.dwellingCoverage && form.standardDeductible && form.currentCoverage && form.policyStartDate
     if (step === 4) return form.email && form.confirmEmail && form.phone && form.heardAboutUs && form.contactPreference
     return true
   }
@@ -337,11 +339,75 @@ export default function HomeQuote() {
             </div>
           )}
 
-          {/* Step 3: Coverage & Products */}
+          {/* Step 3: Coverage Preferences */}
           {step === 3 && (
             <div className="space-y-5">
-              <h2 className="text-lg font-bold text-gray-900">Coverage & Products</h2>
+              <h2 className="text-lg font-bold text-gray-900">Coverage Preferences</h2>
 
+              {/* Estimated Dwelling Coverage */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Estimated Dwelling Coverage *</label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {['$100,000', '$150,000', '$200,000', '$250,000', '$300,000', '$350,000', '$400,000+'].map(amt => (
+                    <button key={amt} type="button"
+                      className={`py-2 rounded-lg border-2 text-xs font-medium transition-all ${form.dwellingCoverage === amt ? 'border-gold-500 bg-gold-50 text-gold-700' : 'border-gray-200 text-gray-600 hover:border-gold-300'}`}
+                      onClick={() => set('dwellingCoverage', amt)}
+                    >{amt}</button>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">Cost to rebuild your home, not the market value</p>
+              </div>
+
+              {/* Standard Deductible */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Deductible Preference *</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {['$500', '$1,000', '$2,500'].map(d => (
+                    <button key={d} type="button"
+                      className={`py-2 rounded-lg border-2 text-sm font-medium transition-all ${form.standardDeductible === d ? 'border-gold-500 bg-gold-50 text-gold-700' : 'border-gray-200 text-gray-600 hover:border-gold-300'}`}
+                      onClick={() => set('standardDeductible', d)}
+                    >{d}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Optional Add-Ons */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">Optional Add-Ons</label>
+                <div className="space-y-2">
+                  {[
+                    { key: 'personalProperty', label: 'Enhanced Personal Property', desc: 'Covers belongings above standard limits' },
+                    { key: 'waterBackup', label: 'Water Backup Coverage', desc: 'Sewer/drain backup damage — common in OKC' },
+                    { key: 'scheduledProperty', label: 'Scheduled Personal Property', desc: 'Extra coverage for jewelry, art, electronics' },
+                    { key: 'tornado', label: 'Extended Tornado Coverage', desc: 'Higher limits for tornado/wind damage' },
+                  ].map(({ key, label, desc }) => (
+                    <label key={key} className={`flex items-start gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${form[key] ? 'border-gold-400 bg-gold-50' : 'border-gray-200 hover:border-gold-300'}`}>
+                      <input type="checkbox" className="mt-1 accent-gold-500" checked={!!form[key]} onChange={e => set(key, e.target.checked)} />
+                      <div>
+                        <div className="text-sm font-semibold text-gray-900">{label}</div>
+                        <div className="text-xs text-gray-500">{desc}</div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <hr className="my-4" />
+
+              {/* Wind/Hail Deductible */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Wind/Hail Deductible (Oklahoma)</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {['1%', '2%', '3%', '5%'].map(d => (
+                    <button key={d} type="button"
+                      className={`py-2 rounded-lg border-2 text-sm font-medium transition-all ${form.windHailDeductible === d ? 'border-gold-500 bg-gold-50 text-gold-700' : 'border-gray-200 text-gray-600 hover:border-gold-300'}`}
+                      onClick={() => set('windHailDeductible', d)}
+                    >{d}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Available Discounts */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Available Discounts</label>
                 <div className="space-y-2">
@@ -354,8 +420,7 @@ export default function HomeQuote() {
                 </div>
               </div>
 
-              <hr className="my-4" />
-
+              {/* Additional Products */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Additional Insurance Products</label>
                 <div className="space-y-2">
@@ -385,20 +450,6 @@ export default function HomeQuote() {
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">Desired Policy Start Date *</label>
                 <input type="date" className="input-field" value={form.policyStartDate} onChange={e => set('policyStartDate', e.target.value)} />
-              </div>
-
-              <hr className="my-4" />
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Wind/Hail Deductible</label>
-                <div className="grid grid-cols-4 gap-2">
-                  {['1%', '2%', '3%', '5%'].map(d => (
-                    <button key={d} type="button"
-                      className={`py-2 rounded-lg border-2 text-sm font-medium transition-all ${form.windHailDeductible === d ? 'border-gold-500 bg-gold-50 text-gold-700' : 'border-gray-200 text-gray-600 hover:border-gold-300'}`}
-                      onClick={() => set('windHailDeductible', d)}
-                    >{d}</button>
-                  ))}
-                </div>
               </div>
             </div>
           )}
