@@ -44,13 +44,19 @@ function saveDB(db) {
   writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
 }
 
-// ─── EMAIL (SendGrid) ─────────────────────────────────────────────────────────
-async function sendSubmissionEmail(submission) {
-  if (!process.env.SENDGRID_API_KEY) {
-    console.log('⚠️  SendGrid API key not configured');
-    return;
-  }
+// ─── EMAIL ────────────────────────────────────────────────────────────────────
+const mailer = createTransport({
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false,
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
 
+async function sendSubmissionEmail(submission) {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) return;
   const d = submission.data;
   const name = d.name || `${d.firstName || ''} ${d.lastName || ''}`.trim() || 'Unknown';
   const type = d.quoteType === 'home' ? '🏠 Home' : '🚗 Auto';
@@ -78,34 +84,19 @@ ${d.notes ? `NOTES\n  ${d.notes}\n` : ''}
 View in dashboard: http://localhost:${process.env.PORT || 3000}/dashboard.html
   `.trim();
 
-  const emailPayload = {
-    personalizations: [{
-      to: [{ email: process.env.SUBMISSION_EMAIL || 'info@okcinsurancebrokers.com' }],
-    }],
-    from: { email: 'noreply@okcinsurancebrokers.com', name: 'OKCIB Quote Bot' },
+  const mailOptions = {
+    from: `"OKCIB Quote Bot" <${process.env.EMAIL_USER}>`,
+    to: process.env.SUBMISSION_EMAIL || 'info@okcinsurancebrokers.com',
     subject: `New ${type} Quote — ${name} (${d.zip || ''})`,
-    content: [{ type: 'text/plain', value: body }],
+    text: body,
   };
-
-  try {
-    const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.SENDGRID_API_KEY}`,
-      },
-      body: JSON.stringify(emailPayload),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`SendGrid API error: ${response.status} - ${error}`);
-    }
-
-    console.log('✅ Email sent successfully');
-  } catch (err) {
-    console.error('❌ Email failed:', err.message);
+  if (submission.policyFile) {
+    mailOptions.attachments = [{
+      filename: submission.policyFile.originalName,
+      path: join(__dirname, 'data', 'uploads', submission.policyFile.filename),
+    }];
   }
+  try { await mailer.sendMail(mailOptions); } catch (err) { console.error('❌ Email failed:', err.message, err.code); }
 }
 
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
