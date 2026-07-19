@@ -89,6 +89,15 @@
 let selectedId = null;
 let eventSource = null;
 
+// Escape untrusted values before putting them in innerHTML. Every field below
+// (name, email, phone, zip, notes, vehicle, agent output…) originates from the
+// public quote form or the agent, so it must be escaped to prevent stored XSS.
+function esc(v) {
+  return String(v == null ? '' : v).replace(/[&<>"']/g, c => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ));
+}
+
 // ─── Load submissions ─────────────────────────────────────────────────────────
 async function loadSubmissions() {
   try {
@@ -114,13 +123,13 @@ async function loadSubmissions() {
       const statusLabel = { pending: 'Pending', running: 'Agent Running...', complete: 'Quoted', error: 'Error' }[s.status] || s.status;
       const isSelected = s.id === selectedId;
       return `
-        <button onclick="selectSubmission('${s.id}')"
+        <button onclick="selectSubmission('${esc(s.id)}')"
           class="w-full text-left p-4 rounded-xl border transition-all slide-in ${isSelected ? 'border-blue-500 bg-blue-950' : 'border-gray-800 bg-gray-900 hover:border-gray-600'}">
           <div class="flex items-center justify-between mb-1">
-            <span class="font-semibold text-sm text-white">${type} ${name}</span>
-            <span class="text-xs ${statusColor}">${statusLabel}</span>
+            <span class="font-semibold text-sm text-white">${type} ${esc(name)}</span>
+            <span class="text-xs ${statusColor}">${esc(statusLabel)}</span>
           </div>
-          <div class="text-xs text-gray-500">${s.data.zip || ''} · ${new Date(s.createdAt).toLocaleDateString()} ${new Date(s.createdAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>
+          <div class="text-xs text-gray-500">${esc(s.data.zip || '')} · ${new Date(s.createdAt).toLocaleDateString()} ${new Date(s.createdAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>
           ${s.quotes && s.quotes.length > 0 ? `<div class="text-xs text-green-400 mt-1">${s.quotes.filter(q=>q.success).length} quote${s.quotes.filter(q=>q.success).length!==1?'s':''} obtained</div>` : ''}
         </button>`;
     }).join('');
@@ -157,11 +166,11 @@ function renderDetail(sub) {
         ${sub.quotes.map(q => `
           <div class="rounded-xl p-3 border ${q.success ? 'border-green-800 bg-green-950' : 'border-gray-700 bg-gray-800'}">
             <div class="flex items-center justify-between">
-              <span class="font-bold text-sm" style="color:${carrierColors[q.carrier]||'#fff'}">${q.carrier}</span>
-              ${q.success ? `<span class="text-green-400 font-bold text-sm">${q.quote || 'Quote obtained'}</span>` : `<span class="text-red-400 text-xs">${q.error || 'Error'}</span>`}
+              <span class="font-bold text-sm" style="color:${carrierColors[q.carrier]||'#fff'}">${esc(q.carrier)}</span>
+              ${q.success ? `<span class="text-green-400 font-bold text-sm">${esc(q.quote || 'Quote obtained')}</span>` : `<span class="text-red-400 text-xs">${esc(q.error || 'Error')}</span>`}
             </div>
-            ${q.notes ? `<div class="text-xs text-gray-400 mt-1">${q.notes}</div>` : ''}
-            ${q.loginUrl ? `<a href="${q.loginUrl}" target="_blank" class="text-xs text-blue-400 hover:underline mt-1 block">→ Open portal to log in</a>` : ''}
+            ${q.notes ? `<div class="text-xs text-gray-400 mt-1">${esc(q.notes)}</div>` : ''}
+            ${/^https?:\/\//.test(q.loginUrl || '') ? `<a href="${esc(q.loginUrl)}" target="_blank" rel="noopener noreferrer" class="text-xs text-blue-400 hover:underline mt-1 block">→ Open portal to log in</a>` : ''}
           </div>`).join('')}
       </div>
     </div>` : '';
@@ -170,23 +179,23 @@ function renderDetail(sub) {
     <div class="slide-in">
       <div class="flex items-start justify-between mb-5">
         <div>
-          <h3 class="text-lg font-bold text-white">${name}</h3>
-          <div class="text-xs text-gray-400 mt-0.5">${d.email || ''} · ${d.phone || ''} · ${d.zip || ''}</div>
+          <h3 class="text-lg font-bold text-white">${esc(name)}</h3>
+          <div class="text-xs text-gray-400 mt-0.5">${esc(d.email || '')} · ${esc(d.phone || '')} · ${esc(d.zip || '')}</div>
         </div>
-        <span class="text-xs px-2 py-1 rounded-full bg-gray-800 text-gray-300 capitalize">${sub.status}</span>
+        <span class="text-xs px-2 py-1 rounded-full bg-gray-800 text-gray-300 capitalize">${esc(sub.status)}</span>
       </div>
 
       <!-- Customer info -->
       <div class="grid grid-cols-2 gap-3 mb-4">
-        ${d.year ? `<div class="bg-gray-800 rounded-lg p-3"><div class="text-xs text-gray-400">Vehicle</div><div class="text-sm text-white font-medium">${d.year} ${d.make} ${d.model}</div></div>` : ''}
-        ${d.coverageType ? `<div class="bg-gray-800 rounded-lg p-3"><div class="text-xs text-gray-400">Coverage</div><div class="text-sm text-white font-medium capitalize">${d.coverageType}</div></div>` : ''}
-        ${d.dob ? `<div class="bg-gray-800 rounded-lg p-3"><div class="text-xs text-gray-400">Date of Birth</div><div class="text-sm text-white font-medium">${d.dob}</div></div>` : ''}
-        ${d.incidents ? `<div class="bg-gray-800 rounded-lg p-3"><div class="text-xs text-gray-400">Prior Incidents</div><div class="text-sm text-white font-medium">${d.incidents}</div></div>` : ''}
-        ${d.currentCarrier ? `<div class="bg-gray-800 rounded-lg p-3"><div class="text-xs text-gray-400">Current Carrier</div><div class="text-sm text-white font-medium">${d.currentCarrier}</div></div>` : ''}
-        ${d.deductible ? `<div class="bg-gray-800 rounded-lg p-3"><div class="text-xs text-gray-400">Deductible</div><div class="text-sm text-white font-medium">$${d.deductible}</div></div>` : ''}
+        ${d.year ? `<div class="bg-gray-800 rounded-lg p-3"><div class="text-xs text-gray-400">Vehicle</div><div class="text-sm text-white font-medium">${esc(d.year)} ${esc(d.make)} ${esc(d.model)}</div></div>` : ''}
+        ${d.coverageType ? `<div class="bg-gray-800 rounded-lg p-3"><div class="text-xs text-gray-400">Coverage</div><div class="text-sm text-white font-medium capitalize">${esc(d.coverageType)}</div></div>` : ''}
+        ${d.dob ? `<div class="bg-gray-800 rounded-lg p-3"><div class="text-xs text-gray-400">Date of Birth</div><div class="text-sm text-white font-medium">${esc(d.dob)}</div></div>` : ''}
+        ${d.incidents ? `<div class="bg-gray-800 rounded-lg p-3"><div class="text-xs text-gray-400">Prior Incidents</div><div class="text-sm text-white font-medium">${esc(d.incidents)}</div></div>` : ''}
+        ${d.currentCarrier ? `<div class="bg-gray-800 rounded-lg p-3"><div class="text-xs text-gray-400">Current Carrier</div><div class="text-sm text-white font-medium">${esc(d.currentCarrier)}</div></div>` : ''}
+        ${d.deductible ? `<div class="bg-gray-800 rounded-lg p-3"><div class="text-xs text-gray-400">Deductible</div><div class="text-sm text-white font-medium">$${esc(d.deductible)}</div></div>` : ''}
       </div>
 
-      ${d.notes ? `<div class="bg-gray-800 rounded-lg p-3 mb-4"><div class="text-xs text-gray-400 mb-1">Notes</div><div class="text-sm text-gray-300">${d.notes}</div></div>` : ''}
+      ${d.notes ? `<div class="bg-gray-800 rounded-lg p-3 mb-4"><div class="text-xs text-gray-400 mb-1">Notes</div><div class="text-sm text-gray-300">${esc(d.notes)}</div></div>` : ''}
 
       <!-- Agent log -->
       <div id="agent-log" class="bg-gray-950 rounded-xl border border-gray-800 p-3 mb-4 min-h-16 max-h-48 overflow-y-auto text-xs font-mono space-y-1 hidden"></div>
@@ -223,8 +232,8 @@ async function runAgent(id) {
       skip: 'text-gray-500', done: 'text-green-400', error: 'text-red-400'
     }[event.type] || 'text-gray-400';
 
-    const carrier = event.carrier ? `[${event.carrier}] ` : '';
-    const msg = event.message || event.quote || event.error || '';
+    const carrier = event.carrier ? `[${esc(event.carrier)}] ` : '';
+    const msg = esc(event.message || event.quote || event.error || '');
 
     log.innerHTML += `<div class="${color}">${carrier}${msg}</div>`;
     log.scrollTop = log.scrollHeight;

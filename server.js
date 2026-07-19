@@ -1,9 +1,9 @@
 import express from 'express';
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, unlinkSync, openSync, readSync, closeSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { createServer } from 'http';
-import { timingSafeEqual } from 'crypto';
+import { timingSafeEqual, createHash } from 'crypto';
 import { createTransport } from 'nodemailer';
 import multer from 'multer';
 import { config } from 'dotenv';
@@ -15,11 +15,41 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 const server = createServer(app);
 
-app.use(express.json());
+// Behind cPanel/Apache reverse proxy — trust it so req.ip reflects the client.
+app.set('trust proxy', true);
+app.use(express.json({ limit: '256kb' })); // quote payloads are small; cap to blunt abuse
+
+// Security headers on every response (defense-in-depth for the dashboard XSS fix).
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  // Lock the dashboard down hard: even if an escape were missed, connect/img-src
+  // 'self' blocks the exfiltration channel a stored-XSS payload would use.
+  if (req.path === '/dashboard.html') {
+    res.setHeader('Content-Security-Policy',
+      "default-src 'self'; " +
+      "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; " +
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+      "font-src https://fonts.gstatic.com; " +
+      "img-src 'self' data:; connect-src 'self'; " +
+      "object-src 'none'; base-uri 'none'; frame-ancestors 'none'");
+  }
+  next();
+});
+
 // Auth must be registered before express.static, or static would serve
 // dashboard.html unauthenticated (requireDashboardAuth is hoisted).
 app.use(['/dashboard.html', '/api/quotes', '/api/agent', '/data'], requireDashboardAuth);
-app.use(express.static(__dirname));
+
+// Never let express.static hand out source, config, or secret files that happen
+// to live in this directory (server.js, package.json, the agent, .env, etc.).
+const BLOCKED_STATIC = /^\/(server\.js|package(-lock)?\.json|vite\.config\.js|postcss\.config\.js|tailwind\.config\.js|\.env.*|agents(\/|$))/i;
+app.use((req, res, next) => {
+  if (BLOCKED_STATIC.test(req.path)) return res.status(403).send('Forbidden');
+  next();
+});
+app.use(express.static(__dirname, { dotfiles: 'deny' }));
 
 // File upload setup
 const upload = multer({
@@ -214,6 +244,28 @@ async function forwardToAMS(submission) {
   console.error('❌ AMS forward gave up after retries; submission is still saved locally', submission.id);
 }
 
+// ─── RATE LIMITING ────────────────────────────────────────────────────────────
+// Minimal in-memory fixed-window limiter (no external dependency). Keyed by IP.
+function rateLimiter({ windowMs, max }) {
+  const hits = new Map(); // ip -> { count, resetAt }
+  return function (req, res, next) {
+    const now = Date.now();
+    const ip = req.ip || req.socket.remoteAddress || 'unknown';
+    let rec = hits.get(ip);
+    if (!rec || now > rec.resetAt) { rec = { count: 0, resetAt: now + windowMs }; hits.set(ip, rec); }
+    rec.count++;
+    // Opportunistic cleanup so the map can't grow unbounded.
+    if (hits.size > 5000) for (const [k, v] of hits) if (now > v.resetAt) hits.delete(k);
+    if (rec.count > max) {
+      res.setHeader('Retry-After', Math.ceil((rec.resetAt - now) / 1000));
+      return res.status(429).json({ error: 'Too many requests. Please try again later.' });
+    }
+    next();
+  };
+}
+const quoteLimiter = rateLimiter({ windowMs: 60 * 60 * 1000, max: 15 }); // 15 submissions/IP/hour
+const authLimiter = rateLimiter({ windowMs: 15 * 60 * 1000, max: 20 });  // 20 auth attempts/IP/15min
+
 // ─── DASHBOARD AUTH ───────────────────────────────────────────────────────────
 // HTTP Basic auth for the broker dashboard and lead APIs. The public quote
 // form endpoint (POST /api/quote) stays open.
@@ -222,30 +274,101 @@ function requireDashboardAuth(req, res, next) {
   if (!password) {
     return res.status(503).send('Dashboard locked: set DASHBOARD_PASSWORD in .env to enable access.');
   }
-  const header = req.headers.authorization || '';
-  if (header.startsWith('Basic ')) {
-    const decoded = Buffer.from(header.slice(6), 'base64').toString('utf8');
-    const pass = decoded.slice(decoded.indexOf(':') + 1);
-    if (pass.length === password.length &&
-        timingSafeEqual(Buffer.from(pass), Buffer.from(password))) {
-      return next();
+  return authLimiter(req, res, () => {
+    const header = req.headers.authorization || '';
+    if (header.startsWith('Basic ')) {
+      const decoded = Buffer.from(header.slice(6), 'base64').toString('utf8');
+      const pass = decoded.slice(decoded.indexOf(':') + 1);
+      // Hash both sides to fixed-length digests: constant-time, no length leak,
+      // and never throws on multibyte input (raw-buffer compare would).
+      const a = createHash('sha256').update(pass).digest();
+      const b = createHash('sha256').update(password).digest();
+      if (timingSafeEqual(a, b)) return next();
     }
+    res.setHeader('WWW-Authenticate', 'Basic realm="OKCIB Dashboard"');
+    res.status(401).send('Authentication required');
+  });
+}
+
+// ─── INPUT VALIDATION ─────────────────────────────────────────────────────────
+// Treat everything from the public form as untrusted: enforce object shape, cap
+// field count / string length / nesting depth so a malicious or malformed body
+// can't bloat the store or wreck downstream consumers. (XSS is handled by
+// escaping at render time in the dashboard.)
+function sanitizeQuoteData(raw) {
+  if (raw == null || typeof raw !== 'object' || Array.isArray(raw)) {
+    return { ok: false, error: 'Submission must be an object' };
   }
-  res.setHeader('WWW-Authenticate', 'Basic realm="OKCIB Dashboard"');
-  res.status(401).send('Authentication required');
+  const MAX_KEYS = 80, MAX_STR = 4000, MAX_DEPTH = 4, MAX_ARR = 50;
+  function walk(v, depth) {
+    if (depth > MAX_DEPTH) return null;
+    if (typeof v === 'string') return v.length > MAX_STR ? v.slice(0, MAX_STR) : v;
+    if (typeof v === 'number' || typeof v === 'boolean' || v === null) return v;
+    if (Array.isArray(v)) return v.slice(0, MAX_ARR).map(x => walk(x, depth + 1));
+    if (typeof v === 'object') {
+      const out = {};
+      let n = 0;
+      for (const k of Object.keys(v)) {
+        if (n++ >= MAX_KEYS) break;
+        out[String(k).slice(0, 100)] = walk(v[k], depth + 1);
+      }
+      return out;
+    }
+    return null; // functions/symbols/undefined dropped
+  }
+  const cleaned = walk(raw, 0);
+  if (!cleaned || Object.keys(cleaned).length === 0) return { ok: false, error: 'Empty submission' };
+  return { ok: true, data: cleaned };
+}
+
+// Verify an uploaded file really is a PDF/image by its magic bytes, not just its
+// client-claimed MIME type (which multer trusts).
+function fileSignatureOk(path) {
+  let fd;
+  try {
+    fd = openSync(path, 'r');
+    const buf = Buffer.alloc(8);
+    const n = readSync(fd, buf, 0, 8, 0);
+    const b = buf.subarray(0, n);
+    const is = (sig) => b.length >= sig.length && sig.every((v, i) => b[i] === v);
+    return (
+      is([0x25, 0x50, 0x44, 0x46]) ||                             // %PDF
+      is([0xFF, 0xD8, 0xFF]) ||                                   // JPEG
+      is([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]) ||     // PNG
+      is([0x47, 0x49, 0x46, 0x38])                               // GIF8
+    );
+  } catch { return false; }
+  finally { if (fd !== undefined) { try { closeSync(fd); } catch {} } }
 }
 
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
 
 // POST /api/quote — save a new submission
-app.post('/api/quote', upload.single('policy'), async (req, res) => {
+app.post('/api/quote', quoteLimiter, upload.single('policy'), async (req, res) => {
+  const cleanupUpload = () => { if (req.file) { try { unlinkSync(req.file.path); } catch {} } };
+
+  let bodyData;
+  try {
+    bodyData = req.body.data ? JSON.parse(req.body.data) : req.body;
+  } catch {
+    cleanupUpload();
+    return res.status(400).json({ error: 'Invalid submission data' });
+  }
+
+  const clean = sanitizeQuoteData(bodyData);
+  if (!clean.ok) { cleanupUpload(); return res.status(400).json({ error: clean.error }); }
+
+  if (req.file && !fileSignatureOk(req.file.path)) {
+    cleanupUpload();
+    return res.status(400).json({ error: 'Uploaded policy must be a PDF or image' });
+  }
+
   const db = loadDB();
-  const bodyData = req.body.data ? JSON.parse(req.body.data) : req.body;
   const submission = {
     id: Date.now().toString(),
     createdAt: new Date().toISOString(),
     status: 'pending',
-    data: bodyData,
+    data: clean.data,
     policyFile: req.file ? { filename: req.file.filename, originalName: req.file.originalname, size: req.file.size } : null,
     quotes: [],
   };
@@ -332,12 +455,27 @@ app.get('*', (req, res) => {
   res.sendFile(join(__dirname, 'index.html'));
 });
 
+// Error handler — turns upload/parse failures into clean 4xx (never a 500 that
+// hangs the request) and removes any partially-written upload.
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  if (req.file) { try { unlinkSync(req.file.path); } catch {} }
+  const tooBig = err && err.code === 'LIMIT_FILE_SIZE';
+  console.error('Request error:', err && err.message);
+  if (!res.headersSent) {
+    res.status(tooBig ? 413 : 400).json({ error: tooBig ? 'File too large (10MB max)' : 'Bad request' });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`\n🛡️  OKCIB Quote Server running at http://localhost:${PORT}`);
   console.log(`📋  Dashboard: http://localhost:${PORT}/dashboard.html`);
   console.log(`📧  Email notifications: ${process.env.EMAIL_USER ? '✅ configured' : '⚠️  not configured (add EMAIL_USER + EMAIL_PASS to .env)'}`);
   console.log(`🔐  Dashboard auth: ${process.env.DASHBOARD_PASSWORD ? '✅ enabled' : '⚠️  LOCKED — set DASHBOARD_PASSWORD in .env to access the dashboard'}`);
+  if (process.env.DASHBOARD_PASSWORD && process.env.DASHBOARD_PASSWORD.length < 12) {
+    console.log('⚠️  DASHBOARD_PASSWORD is short (<12 chars) — use a longer passphrase.');
+  }
   console.log(`📊  AMS lead forwarding: ${process.env.AMS_WEBHOOK_URL && process.env.AMS_WEBHOOK_SECRET ? '✅ configured' : '⚠️  not configured (add AMS_WEBHOOK_URL + AMS_WEBHOOK_SECRET to .env)'}`);
   console.log(`\nPress Ctrl+C to stop\n`);
 });
