@@ -103,6 +103,78 @@ View in dashboard: http://localhost:${process.env.PORT || 3000}/dashboard.html
   try { await mailer.sendMail(mailOptions); } catch (err) { console.error('❌ Email failed:', err.message, err.code); }
 }
 
+const escapeHtml = (s) => String(s)
+  .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+  .replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+
+// Branded confirmation sent to the customer after they submit a quote request
+async function sendCustomerConfirmationEmail(submission) {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) return;
+  const d = submission.data;
+  if (!d.email) return; // customer left no email — nothing to send
+  const firstNameRaw = d.firstName || (d.name || '').trim().split(/\s+/)[0] || '';
+  const firstName = escapeHtml(firstNameRaw);
+  const type = d.quoteType === 'home' ? 'home' : 'auto';
+  const callTimeRaw = d.callTime && d.callTime !== 'Any time'
+    ? `during your preferred time (${d.callTime})`
+    : 'shortly';
+  const callTime = escapeHtml(callTimeRaw);
+  const agencyPhone = '(405) 509-9433';
+  const agencyEmail = process.env.SUBMISSION_EMAIL || 'info@okcinsurancebrokers.com';
+
+  const text = `
+Hi${firstNameRaw ? ` ${firstNameRaw}` : ''},
+
+Thanks for requesting a ${type} insurance quote from OKC Insurance Brokers!
+
+We've received your request and one of our licensed agents will call you ${callTimeRaw} to go over your options. As an independent brokerage, we shop multiple carriers to find you the best coverage at the best price.
+
+Need to reach us sooner?
+  Phone: ${agencyPhone}
+  Email: ${agencyEmail}
+
+Talk soon,
+OKC Insurance Brokers
+  `.trim();
+
+  const html = `
+<div style="margin:0;padding:24px 12px;background:#eff6ff;font-family:Inter,system-ui,-apple-system,sans-serif;">
+  <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #dbeafe;">
+    <div style="background:#1e3a8a;padding:24px 32px;border-bottom:4px solid #f59e0b;">
+      <span style="color:#ffffff;font-size:20px;font-weight:700;">OKC Insurance Brokers</span>
+    </div>
+    <div style="padding:32px;color:#1f2937;font-size:15px;line-height:1.6;">
+      <p style="margin:0 0 16px;">Hi${firstName ? ` ${firstName}` : ''},</p>
+      <p style="margin:0 0 16px;">Thanks for requesting a <strong>${type} insurance quote</strong> — we've received your request!</p>
+      <p style="margin:0 0 16px;">One of our licensed agents will call you <strong>${callTime}</strong> to go over your options. As an independent brokerage, we shop multiple carriers to find you the best coverage at the best price.</p>
+      <div style="background:#eff6ff;border-left:4px solid #2563eb;border-radius:6px;padding:16px 20px;margin:0 0 16px;">
+        <p style="margin:0 0 4px;font-weight:600;color:#1e40af;">Need to reach us sooner?</p>
+        <p style="margin:0;">📞 <a href="tel:+14055099433" style="color:#2563eb;text-decoration:none;">${agencyPhone}</a><br>
+        ✉️ <a href="mailto:${agencyEmail}" style="color:#2563eb;text-decoration:none;">${agencyEmail}</a></p>
+      </div>
+      <p style="margin:0;">Talk soon,<br><strong>OKC Insurance Brokers</strong></p>
+    </div>
+    <div style="padding:16px 32px;background:#f9fafb;border-top:1px solid #e5e7eb;color:#6b7280;font-size:12px;">
+      You're receiving this because you requested a quote at okcinsurancebrokers.com. No action is needed.
+    </div>
+  </div>
+</div>`;
+
+  try {
+    await mailer.sendMail({
+      from: `"OKC Insurance Brokers" <${process.env.EMAIL_USER}>`,
+      to: d.email,
+      replyTo: agencyEmail,
+      subject: `We received your ${type} quote request — OKC Insurance Brokers`,
+      text,
+      html,
+    });
+    console.log(`✅ Confirmation email sent to ${d.email}`);
+  } catch (err) {
+    console.error('❌ Customer confirmation email failed:', err.message, err.code);
+  }
+}
+
 // ─── AMS (agency CRM) FORWARDING ──────────────────────────────────────────────
 // Forwards each submission to the insurance-ams pipeline webhook so website
 // leads show up in the agency CRM automatically. Configure with:
@@ -181,9 +253,12 @@ app.post('/api/quote', upload.single('policy'), async (req, res) => {
   saveDB(db);
   res.json({ success: true, id: submission.id });
 
-  // Fire email notification + CRM forwarding async (don't block response)
+  // Fire email notifications + CRM forwarding async (don't block response)
   sendSubmissionEmail(submission).catch(err =>
     console.error('Email notification failed:', err.message)
+  );
+  sendCustomerConfirmationEmail(submission).catch(err =>
+    console.error('Customer confirmation failed:', err.message)
   );
   forwardToAMS(submission).catch(err =>
     console.error('AMS forwarding failed:', err.message)
