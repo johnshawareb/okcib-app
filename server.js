@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { createServer } from 'http';
+import { timingSafeEqual } from 'crypto';
 import { createTransport } from 'nodemailer';
 import multer from 'multer';
 import { config } from 'dotenv';
@@ -15,6 +16,9 @@ const app = express();
 const server = createServer(app);
 
 app.use(express.json());
+// Auth must be registered before express.static, or static would serve
+// dashboard.html unauthenticated (requireDashboardAuth is hoisted).
+app.use(['/dashboard.html', '/api/quotes', '/api/agent', '/data'], requireDashboardAuth);
 app.use(express.static(__dirname));
 
 // File upload setup
@@ -99,6 +103,66 @@ View in dashboard: http://localhost:${process.env.PORT || 3000}/dashboard.html
   try { await mailer.sendMail(mailOptions); } catch (err) { console.error('❌ Email failed:', err.message, err.code); }
 }
 
+// ─── AMS (agency CRM) FORWARDING ──────────────────────────────────────────────
+// Forwards each submission to the insurance-ams pipeline webhook so website
+// leads show up in the agency CRM automatically. Configure with:
+//   AMS_WEBHOOK_URL    e.g. https://your-ams-domain.com/api/webhooks/okcib
+//   AMS_WEBHOOK_SECRET must match OKCIB_WEBHOOK_SECRET on the AMS side
+async function forwardToAMS(submission) {
+  if (!process.env.AMS_WEBHOOK_URL || !process.env.AMS_WEBHOOK_SECRET) return;
+  const payload = JSON.stringify({
+    submissionId: submission.id,
+    createdAt: submission.createdAt,
+    data: submission.data,
+  });
+  const delays = [0, 2000, 4000, 8000];
+  for (let attempt = 0; attempt < delays.length; attempt++) {
+    if (delays[attempt]) await new Promise(r => setTimeout(r, delays[attempt]));
+    try {
+      const resp = await fetch(process.env.AMS_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-okcib-secret': process.env.AMS_WEBHOOK_SECRET },
+        body: payload,
+      });
+      if (resp.ok) {
+        const result = await resp.json().catch(() => ({}));
+        console.log(`✅ Lead forwarded to AMS (lead #${result.leadId ?? '?'}${result.existing ? ', existing' : ''})`);
+        return;
+      }
+      // 4xx means the AMS rejected the payload — retrying won't help
+      if (resp.status < 500) {
+        console.error(`❌ AMS rejected lead (HTTP ${resp.status}):`, await resp.text().catch(() => ''));
+        return;
+      }
+      console.error(`⚠️  AMS forward attempt ${attempt + 1} failed (HTTP ${resp.status})`);
+    } catch (err) {
+      console.error(`⚠️  AMS forward attempt ${attempt + 1} failed:`, err.message);
+    }
+  }
+  console.error('❌ AMS forward gave up after retries; submission is still saved locally', submission.id);
+}
+
+// ─── DASHBOARD AUTH ───────────────────────────────────────────────────────────
+// HTTP Basic auth for the broker dashboard and lead APIs. The public quote
+// form endpoint (POST /api/quote) stays open.
+function requireDashboardAuth(req, res, next) {
+  const password = process.env.DASHBOARD_PASSWORD;
+  if (!password) {
+    return res.status(503).send('Dashboard locked: set DASHBOARD_PASSWORD in .env to enable access.');
+  }
+  const header = req.headers.authorization || '';
+  if (header.startsWith('Basic ')) {
+    const decoded = Buffer.from(header.slice(6), 'base64').toString('utf8');
+    const pass = decoded.slice(decoded.indexOf(':') + 1);
+    if (pass.length === password.length &&
+        timingSafeEqual(Buffer.from(pass), Buffer.from(password))) {
+      return next();
+    }
+  }
+  res.setHeader('WWW-Authenticate', 'Basic realm="OKCIB Dashboard"');
+  res.status(401).send('Authentication required');
+}
+
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
 
 // POST /api/quote — save a new submission
@@ -117,9 +181,12 @@ app.post('/api/quote', upload.single('policy'), async (req, res) => {
   saveDB(db);
   res.json({ success: true, id: submission.id });
 
-  // Fire email notification async (don't block response)
+  // Fire email notification + CRM forwarding async (don't block response)
   sendSubmissionEmail(submission).catch(err =>
     console.error('Email notification failed:', err.message)
+  );
+  forwardToAMS(submission).catch(err =>
+    console.error('AMS forwarding failed:', err.message)
   );
 });
 
@@ -195,5 +262,7 @@ server.listen(PORT, () => {
   console.log(`\n🛡️  OKCIB Quote Server running at http://localhost:${PORT}`);
   console.log(`📋  Dashboard: http://localhost:${PORT}/dashboard.html`);
   console.log(`📧  Email notifications: ${process.env.EMAIL_USER ? '✅ configured' : '⚠️  not configured (add EMAIL_USER + EMAIL_PASS to .env)'}`);
+  console.log(`🔐  Dashboard auth: ${process.env.DASHBOARD_PASSWORD ? '✅ enabled' : '⚠️  LOCKED — set DASHBOARD_PASSWORD in .env to access the dashboard'}`);
+  console.log(`📊  AMS lead forwarding: ${process.env.AMS_WEBHOOK_URL && process.env.AMS_WEBHOOK_SECRET ? '✅ configured' : '⚠️  not configured (add AMS_WEBHOOK_URL + AMS_WEBHOOK_SECRET to .env)'}`);
   console.log(`\nPress Ctrl+C to stop\n`);
 });
