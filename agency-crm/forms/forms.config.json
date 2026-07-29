@@ -1,0 +1,153 @@
+{
+  "version": 1,
+  "endpoint": "/api/quote",
+  "forms": [
+    {
+      "id": "auto-quote",
+      "label": "Auto Insurance Quote",
+      "quoteType": "auto",
+      "renderer": "public-site",
+      "route": "/#/auto-quote",
+      "source": "site/auto-quote",
+      "accent": "#2563eb",
+      "note": "Defined in the public site bundle (index.html), not schema-driven yet."
+    },
+    {
+      "id": "home-quote",
+      "label": "Home Insurance Quote",
+      "quoteType": "home",
+      "renderer": "public-site",
+      "route": "/#/home-quote",
+      "source": "site/home-quote",
+      "accent": "#f59e0b",
+      "note": "Defined in the public site bundle (index.html), not schema-driven yet."
+    },
+    {
+      "id": "hoa-quote",
+      "label": "HOA & Condo Association Quote",
+      "quoteType": "hoa",
+      "renderer": "schema",
+      "file": "hoa-quote.html",
+      "route": "/agency-crm/forms/hoa-quote.html",
+      "source": "agency-crm/forms/hoa-quote",
+      "accent": "#059669",
+      "badge": "🏢 HOA & Condo Association Quote",
+      "heading": "Community Association Insurance Quote",
+      "subheading": "Property, general liability, directors & officers, and crime coverage for Oklahoma associations",
+      "leadName": ["associationName", "contactName"],
+      "confirmation": {
+        "heading": "Quote Request Received",
+        "body": "Thanks — a licensed commercial agent will review your association and follow up, typically the same business day."
+      },
+      "steps": [
+        {
+          "key": "Association",
+          "title": "Association Information",
+          "fields": [
+            { "name": "associationName", "label": "Association Name", "kind": "text", "placeholder": "e.g. Quail Creek Homeowners Association", "required": true },
+            { "name": "associationType", "label": "Association Type", "kind": "choice", "cols": 3, "required": true,
+              "options": ["HOA", "Condo (COA)", "Townhome", "Master Association", "Mixed-Use", "Co-op"] },
+            { "name": "unitCount", "label": "Number of Units", "kind": "text", "placeholder": "e.g. 120", "required": true, "half": true },
+            { "name": "yearEstablished", "label": "Year Established", "kind": "text", "placeholder": "e.g. 1998", "maxLength": 4, "half": true },
+            { "name": "address", "label": "Property Street Address", "kind": "text", "placeholder": "123 Community Drive", "required": true },
+            { "name": "address2", "label": "Mailing Address / Suite (optional)", "kind": "text", "placeholder": "c/o management company" },
+            { "name": "city", "label": "City", "kind": "text", "placeholder": "Oklahoma City", "required": true, "third": true },
+            { "name": "state", "label": "State", "kind": "text", "default": "Oklahoma", "third": true },
+            { "name": "zip", "label": "ZIP", "kind": "text", "placeholder": "73101", "maxLength": 5, "required": true, "third": true },
+            { "name": "management", "label": "How is the association managed?", "kind": "choice", "cols": 3, "required": true,
+              "options": ["Self-Managed", "Professional Management", "Developer Controlled"] },
+            { "name": "managementCompany", "label": "Management Company", "kind": "text", "placeholder": "Company name",
+              "showIf": { "field": "management", "equals": ["Professional Management"] } },
+            { "name": "annualBudget", "label": "Annual Operating Budget", "kind": "text", "placeholder": "e.g. $250,000", "half": true },
+            { "name": "reserveBalance", "label": "Reserve Fund Balance", "kind": "text", "placeholder": "e.g. $100,000", "half": true }
+          ]
+        },
+        {
+          "key": "Property",
+          "title": "Property & Common Areas",
+          "fields": [
+            { "name": "buildingCount", "label": "Buildings", "kind": "text", "placeholder": "e.g. 8", "required": true, "third": true },
+            { "name": "yearBuilt", "label": "Year Built", "kind": "text", "placeholder": "e.g. 2001", "maxLength": 4, "required": true, "third": true },
+            { "name": "stories", "label": "Stories", "kind": "text", "placeholder": "e.g. 2", "third": true },
+            { "name": "construction", "label": "Construction Type", "kind": "choice", "cols": 3, "required": true,
+              "options": ["Frame", "Masonry", "Joisted Masonry", "Fire Resistive", "Mixed"] },
+            { "name": "roofAge", "label": "Roof Age", "kind": "choice", "cols": 4, "options": ["< 5 yrs", "5–10 yrs", "10–15 yrs", "15+ yrs"] },
+            { "name": "roofMaterial", "label": "Roof Material", "kind": "choice", "cols": 3, "options": ["Asphalt", "Metal", "Tile", "Flat/Membrane", "Wood", "Other"] },
+            { "name": "commonPropertyValue", "label": "Replacement Cost of Association-Owned Property", "kind": "text",
+              "placeholder": "e.g. $4,500,000 (buildings, clubhouse, fences, signage)",
+              "help": "Cost to rebuild common property, not market value. Include anything the association must insure under the governing documents." },
+            { "name": "amenities", "label": "Common Area Amenities", "kind": "multi",
+              "options": ["Pool / Spa", "Clubhouse", "Fitness Center", "Playground", "Tennis / Pickleball", "Walking Trails", "Lake or Pond", "Dock / Marina", "Elevators", "Gated Entry", "Parking Garage", "Storage Units"] },
+            { "name": "protection", "label": "Protective Features", "kind": "multi",
+              "options": ["Fire Sprinklers", "Fire / Smoke Alarms", "Central Station Alarm", "Security Cameras", "Security Patrol", "Storm Shelter", "Backup Generator", "Fire Hydrants On-Site"] },
+            { "kind": "note", "text": "Oklahoma associations carry heavy wind and hail exposure. We compare percentage wind/hail deductibles across carriers so the board knows the real out-of-pocket cost of a storm." }
+          ]
+        },
+        {
+          "key": "Board",
+          "title": "Board & Operations",
+          "intro": "These questions drive directors & officers, employment practices, and crime/fidelity pricing.",
+          "fields": [
+            { "name": "boardMembers", "label": "Number of Board Members", "kind": "text", "placeholder": "e.g. 5", "required": true, "half": true },
+            { "name": "rentedPercent", "label": "% of Units Rented / Leased", "kind": "text", "placeholder": "e.g. 15%", "half": true },
+            { "name": "hasEmployees", "label": "Does the association have employees?", "kind": "choice", "cols": 2, "required": true, "options": ["Yes", "No"] },
+            { "name": "employeeCount", "label": "Number of Employees", "kind": "text", "placeholder": "e.g. 4", "half": true,
+              "showIf": { "field": "hasEmployees", "equals": ["Yes"] } },
+            { "name": "annualPayroll", "label": "Annual Payroll", "kind": "text", "placeholder": "e.g. $120,000", "half": true,
+              "showIf": { "field": "hasEmployees", "equals": ["Yes"] } },
+            { "name": "vendors", "label": "Contracted Vendors", "kind": "multi",
+              "options": ["Landscaping", "Pool Service", "Security / Gate", "Property Management", "Janitorial", "Snow Removal", "Maintenance / Repair", "Trash Collection"] },
+            { "name": "vendorCOI", "label": "Are certificates of insurance required from all vendors?", "kind": "choice", "cols": 3, "options": ["Yes", "No", "Sometimes"] },
+            { "name": "shortTermRentals", "label": "Are short-term rentals (Airbnb/VRBO) allowed?", "kind": "choice", "cols": 3, "options": ["Yes", "No", "Restricted"] },
+            { "name": "delinquencies", "label": "Assessment delinquencies or foreclosure actions in the past 3 years?", "kind": "choice", "cols": 3, "options": ["None", "1–5 units", "6+ units"] },
+            { "name": "fundControls", "label": "Financial controls in place", "kind": "multi",
+              "options": ["Dual signatures required", "Annual audit / review", "Board approval over set dollar amount", "Separate reserve account", "Management company handles funds", "Monthly financial statements to board"] },
+            { "name": "priorClaims", "label": "Any claims, lawsuits, or demand letters against the association or board in the past 5 years?", "kind": "choice", "cols": 3, "required": true,
+              "options": ["No", "Yes", "Threatened / possible"] },
+            { "name": "priorClaimDetails", "label": "Describe the claim(s)", "kind": "textarea",
+              "placeholder": "Type of claim (breach of contract, breach of fiduciary duty, CC&R violation, employment practices), date, status, and amounts involved",
+              "showIf": { "field": "priorClaims", "equals": ["Yes", "Threatened / possible"] } },
+            { "name": "documentsAvailable", "label": "Are the governing documents (CC&Rs, bylaws) current and available?", "kind": "choice", "cols": 3, "options": ["Yes", "No", "Being updated"] }
+          ]
+        },
+        {
+          "key": "Coverage",
+          "title": "Coverage Needed",
+          "fields": [
+            { "name": "coverageLines", "label": "Which coverages should we quote?", "kind": "multi", "required": true,
+              "options": ["Property (Common Areas)", "General Liability", "Directors & Officers", "Crime / Fidelity Bond", "Umbrella / Excess Liability", "Workers Compensation", "Employment Practices Liability", "Equipment Breakdown", "Cyber Liability", "Flood", "Hired & Non-Owned Auto", "Ordinance or Law"] },
+            { "name": "glLimit", "label": "General Liability Limit", "kind": "choice", "cols": 4, "options": ["$500,000", "$1,000,000", "$2,000,000", "Not sure"] },
+            { "name": "doLimit", "label": "Directors & Officers Limit", "kind": "choice", "cols": 4, "options": ["$500,000", "$1,000,000", "$2,000,000", "Not sure"] },
+            { "name": "crimeLimit", "label": "Crime / Fidelity Limit", "kind": "choice", "cols": 4, "options": ["$25,000", "$50,000", "$100,000", "Not sure"],
+              "help": "Governing documents and lender requirements often set a minimum fidelity limit — commonly the reserve balance plus three months of assessments. We check yours against the documents." },
+            { "name": "propertyDeductible", "label": "Property Deductible", "kind": "choice", "cols": 4, "options": ["$1,000", "$2,500", "$5,000", "$10,000"] },
+            { "name": "windHailDeductible", "label": "Wind / Hail Deductible (Oklahoma)", "kind": "choice", "cols": 4, "options": ["1%", "2%", "3%", "5%"] },
+            { "name": "currentCarrier", "label": "Does the association have current coverage?", "kind": "choice", "cols": 3, "required": true, "options": ["Yes", "No", "New Association"] },
+            { "name": "expiringPremium", "label": "Expiring Annual Premium", "kind": "text", "placeholder": "e.g. $18,500", "half": true },
+            { "name": "policyStartDate", "label": "Desired Effective Date", "kind": "date", "required": true, "half": true },
+            { "name": "lossHistory", "label": "Loss History (past 5 years)", "kind": "textarea",
+              "placeholder": "Dates, types, and paid amounts — e.g. 2023 hail claim, roofs on 4 buildings, $210,000 paid" }
+          ]
+        },
+        {
+          "key": "Contact",
+          "title": "Contact Information",
+          "intro": "A licensed commercial agent will follow up with association options, usually the same business day.",
+          "fields": [
+            { "name": "contactName", "label": "Contact Name", "kind": "text", "placeholder": "First and last name", "required": true, "half": true },
+            { "name": "contactRole", "label": "Role", "kind": "select", "required": true, "half": true,
+              "options": ["Board President", "Vice President", "Treasurer", "Secretary", "Board Member", "Property Manager", "Developer", "Other"] },
+            { "name": "email", "label": "Email", "kind": "text", "type": "email", "placeholder": "you@email.com", "required": true },
+            { "name": "confirmEmail", "label": "Confirm Email", "kind": "text", "type": "email", "placeholder": "Confirm email", "required": true, "mustMatch": "email" },
+            { "name": "phone", "label": "Phone Number", "kind": "text", "type": "tel", "placeholder": "(405) 555-0100", "required": true },
+            { "name": "contactPreference", "label": "Preferred Contact Method", "kind": "select", "required": true, "options": ["Call", "Email", "Text", "No preference"] },
+            { "name": "heardAboutUs", "label": "How did you hear about us?", "kind": "select", "options": ["Google Search", "Facebook", "Referral", "Property Manager", "Previous Customer", "Other"] },
+            { "name": "textOptIn", "label": "Opt in to text messages?", "kind": "choice", "cols": 2, "options": ["Yes", "No"] },
+            { "name": "notes", "label": "Anything else we should know?", "kind": "textarea", "placeholder": "Upcoming projects, special assessments, lender requirements, renewal deadlines" },
+            { "kind": "note", "text": "Have the declaration page, loss runs, and governing documents handy — sending them along speeds up the quote. By submitting this form, you agree to be contacted by OKC Insurance Brokers. We never sell your information." }
+          ]
+        }
+      ]
+    }
+  ]
+}
