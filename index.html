@@ -1217,24 +1217,24 @@ function HOAQuotePage({ navigate }) {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({
     // Association
-    associationName:'', associationType:'', yearEstablished:'', unitCount:'',
-    address:'', address2:'', city:'', state:'Oklahoma', zip:'',
+    associationName:'', associationType:'', yearEstablished:'', unitsWhenComplete:'',
+    locationAddress:'', mailingAddress:'', locationCity:'', locationState:'Oklahoma', locationZip:'',
     management:'', managementCompany:'', annualBudget:'', reserveBalance:'',
     // Property / common areas
-    buildingCount:'', yearBuilt:'', stories:'', construction:'',
-    roofAge:'', roofMaterial:'', commonPropertyValue:'',
+    buildingCount:'', originalBuildingYear:'', stories:'', construction:'',
+    roofAge:'', roofType:'', residentialBuildingLimit:'',
     amenities:[], protection:[],
     // Board & operations
     boardMembers:'', hasEmployees:'', employeeCount:'', annualPayroll:'',
-    vendorCOI:'', vendors:[], rentedPercent:'', shortTermRentals:'',
-    delinquencies:'', priorClaims:'', priorClaimDetails:'',
-    fundControls:[], documentsAvailable:'',
+    contractorCOIs:'', vendors:[], rentedPercent:'', shortTermRentals:'',
+    delinquencies:'', lossesPast5Years:'', lossDescription:'',
+    fundControls:[], hasBylaws:'',
     // Coverage
-    coverageLines:[], glLimit:'', doLimit:'', crimeLimit:'',
+    coveragesDesired:[], glLimit:'', doLimit:'', crimeLimit:'',
     propertyDeductible:'', windHailDeductible:'',
-    currentCarrier:'', expiringPremium:'', policyStartDate:'', lossHistory:'',
+    currentCarrier:'', expiringPremium:'', policyStartDate:'', additionalLosses:'',
     // Contact
-    contactName:'', contactRole:'', email:'', confirmEmail:'', phone:'',
+    contactName:'', contactTitle:'', email:'', confirmEmail:'', phone:'',
     heardAboutUs:'', contactPreference:'', textOptIn:'', notes:'',
   });
   const set = (k,v) => setForm(f=>({...f,[k]:v}));
@@ -1266,11 +1266,11 @@ function HOAQuotePage({ navigate }) {
   );
 
   const canNext = () => {
-    if (step===0) return form.associationName && form.associationType && form.unitCount && form.address && form.city && form.zip && form.management;
-    if (step===1) return form.buildingCount && form.yearBuilt && form.construction;
-    if (step===2) return form.boardMembers && form.hasEmployees && form.priorClaims;
-    if (step===3) return form.coverageLines.length > 0 && form.currentCarrier && form.policyStartDate;
-    if (step===4) return form.contactName && form.contactRole && form.email && form.confirmEmail && form.phone && form.contactPreference;
+    if (step===0) return form.associationName && form.associationType && form.unitsWhenComplete && form.locationAddress && form.locationCity && form.locationZip && form.management;
+    if (step===1) return form.buildingCount && form.originalBuildingYear && form.construction;
+    if (step===2) return form.boardMembers && form.hasEmployees && form.lossesPast5Years;
+    if (step===3) return form.coveragesDesired.length > 0 && form.currentCarrier && form.policyStartDate;
+    if (step===4) return form.contactName && form.contactTitle && form.email && form.confirmEmail && form.phone && form.contactPreference;
     return true;
   };
 
@@ -1296,12 +1296,12 @@ function HOAQuotePage({ navigate }) {
               </div>
               <div>
                 <label className={lbl2}>Association Type *</label>
-                <Choice field="associationType" options={['HOA','Condo (COA)','Townhome','Master Association','Mixed-Use','Co-op']} small />
+                <Choice field="associationType" options={['Residential condo','Homeowner','Townhome','Planned unit development','Master with sub-associations','Property owners','Cooperative','Commercial/Retail','Mobile home/RV park','Road/Lake association','Condo-Hotel','Timeshare/Interval']} cols={2} small />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={lbl}>Number of Units *</label>
-                  <input className={inp} placeholder="e.g. 120" value={form.unitCount} onChange={e=>set('unitCount',e.target.value)} />
+                  <input className={inp} placeholder="e.g. 120" value={form.unitsWhenComplete} onChange={e=>set('unitsWhenComplete',e.target.value)} />
                 </div>
                 <div>
                   <label className={lbl}>Year Established</label>
@@ -1310,24 +1310,24 @@ function HOAQuotePage({ navigate }) {
               </div>
               <div>
                 <label className={lbl}>Property Street Address *</label>
-                <input className={inp} placeholder="123 Community Drive" value={form.address} onChange={e=>set('address',e.target.value)} />
+                <input className={inp} placeholder="123 Community Drive" value={form.locationAddress} onChange={e=>set('locationAddress',e.target.value)} />
               </div>
               <div>
                 <label className={lbl}>Mailing Address / Suite (optional)</label>
-                <input className={inp} placeholder="c/o management company" value={form.address2} onChange={e=>set('address2',e.target.value)} />
+                <input className={inp} placeholder="c/o management company" value={form.mailingAddress} onChange={e=>set('mailingAddress',e.target.value)} />
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className={lbl}>City *</label>
-                  <input className={inp} placeholder="Oklahoma City" value={form.city} onChange={e=>set('city',e.target.value)} />
+                  <input className={inp} placeholder="Oklahoma City" value={form.locationCity} onChange={e=>set('locationCity',e.target.value)} />
                 </div>
                 <div>
                   <label className={lbl}>State</label>
-                  <input className={inp} value={form.state} onChange={e=>set('state',e.target.value)} />
+                  <input className={inp} value={form.locationState} onChange={e=>set('locationState',e.target.value)} />
                 </div>
                 <div>
                   <label className={lbl}>ZIP *</label>
-                  <input className={inp} placeholder="73101" maxLength={5} value={form.zip} onChange={e=>set('zip',e.target.value)} />
+                  <input className={inp} placeholder="73101" maxLength={5} value={form.locationZip} onChange={e=>set('locationZip',e.target.value)} />
                 </div>
               </div>
               <div>
@@ -1363,7 +1363,7 @@ function HOAQuotePage({ navigate }) {
                 </div>
                 <div>
                   <label className={lbl}>Year Built *</label>
-                  <input className={inp} placeholder="e.g. 2001" maxLength={4} value={form.yearBuilt} onChange={e=>set('yearBuilt',e.target.value)} />
+                  <input className={inp} placeholder="e.g. 2001" maxLength={4} value={form.originalBuildingYear} onChange={e=>set('originalBuildingYear',e.target.value)} />
                 </div>
                 <div>
                   <label className={lbl}>Stories</label>
@@ -1380,11 +1380,11 @@ function HOAQuotePage({ navigate }) {
               </div>
               <div>
                 <label className={lbl2}>Roof Material</label>
-                <Choice field="roofMaterial" options={['Asphalt','Metal','Tile','Flat/Membrane','Wood','Other']} small />
+                <Choice field="roofType" options={['Asphalt','Metal','Tile','Flat/Membrane','Wood','Other']} small />
               </div>
               <div>
                 <label className={lbl}>Replacement Cost of Association-Owned Property</label>
-                <input className={inp} placeholder="e.g. $4,500,000 (buildings, clubhouse, fences, signage)" value={form.commonPropertyValue} onChange={e=>set('commonPropertyValue',e.target.value)} />
+                <input className={inp} placeholder="e.g. $4,500,000 (buildings, clubhouse, fences, signage)" value={form.residentialBuildingLimit} onChange={e=>set('residentialBuildingLimit',e.target.value)} />
                 <p className="text-xs text-gray-500 mt-2">Cost to rebuild common property, not market value. Include anything the association is responsible for insuring under the governing documents.</p>
               </div>
               <div>
@@ -1438,7 +1438,7 @@ function HOAQuotePage({ navigate }) {
               </div>
               <div>
                 <label className={lbl2}>Are certificates of insurance required from all vendors?</label>
-                <Choice field="vendorCOI" options={['Yes','No','Sometimes']} />
+                <Choice field="contractorCOIs" options={['Yes','No','Sometimes']} />
               </div>
               <div>
                 <label className={lbl2}>Are short-term rentals (Airbnb/VRBO) allowed?</label>
@@ -1454,17 +1454,17 @@ function HOAQuotePage({ navigate }) {
               </div>
               <div>
                 <label className={lbl2}>Any claims, lawsuits, or demand letters against the association or board in the past 5 years? *</label>
-                <Choice field="priorClaims" options={['No','Yes','Threatened / possible']} />
+                <Choice field="lossesPast5Years" options={['No','Yes','Threatened / possible']} />
               </div>
-              {form.priorClaims!=='No' && form.priorClaims!=='' && (
+              {form.lossesPast5Years!=='No' && form.lossesPast5Years!=='' && (
                 <div>
                   <label className={lbl}>Describe the claim(s)</label>
-                  <textarea className={`${inp} min-h-24`} placeholder="Type of claim (breach of contract, breach of fiduciary duty, CC&R violation, employment practices), date, status, and amounts involved" value={form.priorClaimDetails} onChange={e=>set('priorClaimDetails',e.target.value)} />
+                  <textarea className={`${inp} min-h-24`} placeholder="Type of claim (breach of contract, breach of fiduciary duty, CC&R violation, employment practices), date, status, and amounts involved" value={form.lossDescription} onChange={e=>set('lossDescription',e.target.value)} />
                 </div>
               )}
               <div>
                 <label className={lbl2}>Are the governing documents (CC&amp;Rs, bylaws) current and available?</label>
-                <Choice field="documentsAvailable" options={['Yes','No','Being updated']} />
+                <Choice field="hasBylaws" options={['Yes','No','Being updated']} />
               </div>
             </div>
           )}
@@ -1474,7 +1474,7 @@ function HOAQuotePage({ navigate }) {
               <h2 className="text-lg font-bold text-gray-900">Coverage Needed</h2>
               <div>
                 <label className={lbl2}>Which coverages should we quote? *</label>
-                <Multi field="coverageLines" options={['Property (Common Areas)','General Liability','Directors & Officers','Crime / Fidelity Bond','Umbrella / Excess Liability','Workers Compensation','Employment Practices Liability','Equipment Breakdown','Cyber Liability','Flood','Hired & Non-Owned Auto','Ordinance or Law']} />
+                <Multi field="coveragesDesired" options={['Property','General liability','Directors and officers','Crime / Fidelity Bond','Umbrella / Excess Liability','Workers Compensation','Employment Practices Liability','Equipment Breakdown','Cyber Liability','Flood','Hired & Non-Owned Auto','Ordinance or Law']} />
               </div>
               <div>
                 <label className={lbl2}>General Liability Limit</label>
@@ -1514,7 +1514,7 @@ function HOAQuotePage({ navigate }) {
               </div>
               <div>
                 <label className={lbl}>Loss History (past 5 years)</label>
-                <textarea className={`${inp} min-h-24`} placeholder="Dates, types, and paid amounts — e.g. 2023 hail claim, roofs on 4 buildings, $210,000 paid" value={form.lossHistory} onChange={e=>set('lossHistory',e.target.value)} />
+                <textarea className={`${inp} min-h-24`} placeholder="Dates, types, and paid amounts — e.g. 2023 hail claim, roofs on 4 buildings, $210,000 paid" value={form.additionalLosses} onChange={e=>set('additionalLosses',e.target.value)} />
               </div>
             </div>
           )}
@@ -1530,7 +1530,7 @@ function HOAQuotePage({ navigate }) {
                 </div>
                 <div>
                   <label className={lbl}>Role *</label>
-                  <select className={inp} value={form.contactRole} onChange={e=>set('contactRole',e.target.value)}>
+                  <select className={inp} value={form.contactTitle} onChange={e=>set('contactTitle',e.target.value)}>
                     <option value="">Select</option>
                     {['Board President','Vice President','Treasurer','Secretary','Board Member','Property Manager','Developer','Other'].map(r=><option key={r}>{r}</option>)}
                   </select>

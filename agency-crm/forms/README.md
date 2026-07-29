@@ -11,7 +11,25 @@ render whatever it says.
 |---|---|---|
 | `auto-quote` | `auto` | public site page (`/#/auto-quote`) — registered for reference, fields live in `index.html` |
 | `home-quote` | `home` | public site page (`/#/home-quote`) — registered for reference, fields live in `index.html` |
-| `hoa-quote` | `hoa` | **schema-driven** — steps/fields defined entirely in the config, rendered by `hoa-quote.html` |
+| `hoa-quote-lite` | `hoa` | public site page (`/#/hoa-quote`) — short lead-gen intake, same field names as `hoa-quote` |
+| `hoa-quote` | `hoa` | **schema-driven** — the full carrier application, defined entirely in the config and rendered by `hoa-quote.html` |
+
+### The HOA application
+
+`hoa-quote` follows the **USLI Community Association Package Product Application
+(CAP PKG 02/23)**, section by section: coverage requested, general information, units &
+occupancy (GL rating questions 1–14, 22–24), safety & eligibility (17–18, 21, 25–35),
+amenities (36–37), property eligibility (38–49), directors & officers (50–59), and loss
+information (19). Answers map to the carrier form, so a completed submission is enough to
+submit to markets — bring loss runs for anything reported under Loss Information.
+
+Two sections are gated on what the applicant asks for: **Property Eligibility** appears
+only when Property coverage is requested, and **Directors & Officers** only when D&O is.
+Sub-questions appear the same way — pool safety questions only for associations with a
+pool, short-term-rental bylaws questions only when short-term rentals exist.
+
+The shorter `hoa-quote-lite` page on the marketing site collects a subset using the same
+field names, so both feed the same labeled sections in the agent email and dashboard.
 
 Top-level `endpoint` is the default submit URL for every form; a form can override it with
 its own `endpoint` key.
@@ -59,7 +77,9 @@ Field kinds: `text`, `date`, `textarea`, `select`, `choice` (single-select butto
 Field options:
 
 - `required: true` — gates the Continue/Submit button
-- `showIf: { "field": "hasEmployees", "equals": ["Yes"] }` — conditional display
+- `showIf: { "field": "commercialOccupancy", "equals": ["Yes"] }` — show when a field has one of these values
+- `showIf: { "field": "amenities", "includes": "Pool / Spa" }` — show when a multi-select contains this option
+- a step accepts the same `showIf`, which hides the whole section (that's how Property and D&O are gated on the coverages requested)
 - `mustMatch: "email"` — value must equal another field (used for confirm-email)
 - `default: "Oklahoma"` — initial value
 - `half` / `third` — share a row with the adjacent same-width field

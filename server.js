@@ -7,6 +7,7 @@ import { createTransport } from 'nodemailer';
 import multer from 'multer';
 import { config } from 'dotenv';
 import { runQuoteAgent } from './agents/quote-agent.js';
+import { loadFormSchema, schemaEmailBody } from './lib/lead-email.js';
 
 config();
 
@@ -55,62 +56,6 @@ const mailer = createTransport({
   },
 });
 
-const list = (v) => Array.isArray(v) && v.length ? v.join(', ') : '—';
-
-function hoaEmailBody(d, submission) {
-  return `
-New 🏢 HOA / Community Association Quote Request — OKC Insurance Brokers
-=======================================================================
-Submitted: ${new Date(submission.createdAt).toLocaleString('en-US', { timeZone: 'America/Chicago' })} CT
-${d.source ? `Source:    ${d.source}\n` : ''}
-ASSOCIATION
-  Name:        ${d.associationName || '—'}
-  Type:        ${d.associationType || '—'}
-  Units:       ${d.unitCount || '—'}
-  Established: ${d.yearEstablished || '—'}
-  Address:     ${[d.address, d.address2].filter(Boolean).join(', ') || '—'}
-               ${d.city || '—'}, ${d.state || '—'} ${d.zip || ''}
-  Managed by:  ${d.management || '—'}${d.managementCompany ? ` (${d.managementCompany})` : ''}
-  Budget:      ${d.annualBudget || '—'}   Reserves: ${d.reserveBalance || '—'}
-
-PROPERTY
-  Buildings:   ${d.buildingCount || '—'}   Year built: ${d.yearBuilt || '—'}   Stories: ${d.stories || '—'}
-  Construction:${d.construction || '—'}
-  Roof:        ${d.roofAge || '—'} / ${d.roofMaterial || '—'}
-  Replacement: ${d.commonPropertyValue || '—'}
-  Amenities:   ${list(d.amenities)}
-  Protection:  ${list(d.protection)}
-
-BOARD & OPERATIONS
-  Board members:  ${d.boardMembers || '—'}
-  Employees:      ${d.hasEmployees || '—'}${d.hasEmployees === 'Yes' ? ` (${d.employeeCount || '?'} / payroll ${d.annualPayroll || '?'})` : ''}
-  Units rented:   ${d.rentedPercent || '—'}   Short-term rentals: ${d.shortTermRentals || '—'}
-  Vendors:        ${list(d.vendors)}
-  Vendor COIs:    ${d.vendorCOI || '—'}
-  Delinquencies:  ${d.delinquencies || '—'}
-  Fund controls:  ${list(d.fundControls)}
-  Governing docs: ${d.documentsAvailable || '—'}
-  Prior claims:   ${d.priorClaims || '—'}${d.priorClaimDetails ? `\n    ${d.priorClaimDetails}` : ''}
-
-COVERAGE REQUESTED
-  Lines:       ${list(d.coverageLines)}
-  Limits:      GL ${d.glLimit || '—'} · D&O ${d.doLimit || '—'} · Crime ${d.crimeLimit || '—'}
-  Deductibles: Property ${d.propertyDeductible || '—'} · Wind/Hail ${d.windHailDeductible || '—'}
-  Current:     ${d.currentCarrier || '—'}   Expiring premium: ${d.expiringPremium || '—'}
-  Effective:   ${d.policyStartDate || '—'}
-  Losses:      ${d.lossHistory || 'None reported'}
-
-CONTACT
-  Name:    ${d.contactName || '—'} (${d.contactRole || '—'})
-  Email:   ${d.email || '—'}
-  Phone:   ${d.phone || '—'}
-  Prefers: ${d.contactPreference || '—'}   Text opt-in: ${d.textOptIn || '—'}
-  Heard:   ${d.heardAboutUs || '—'}
-${d.notes ? `\nNOTES\n  ${d.notes}\n` : ''}
-View in dashboard: http://localhost:${process.env.PORT || 3000}/dashboard.html
-  `.trim();
-}
-
 async function sendSubmissionEmail(submission) {
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) return;
   const d = submission.data;
@@ -120,7 +65,9 @@ async function sendSubmissionEmail(submission) {
     : (d.name || `${d.firstName || ''} ${d.lastName || ''}`.trim() || 'Unknown');
   const type = isHOA ? '🏢 HOA' : d.quoteType === 'home' ? '🏠 Home' : '🚗 Auto';
 
-  const body = isHOA ? hoaEmailBody(d, submission) : `
+  const hoaSchema = isHOA ? loadFormSchema('hoa') : null;
+  const dashboardUrl = `http://localhost:${process.env.PORT || 3000}/dashboard.html`;
+  const body = hoaSchema ? schemaEmailBody(d, submission, hoaSchema, { dashboardUrl }) : `
 New ${type} Quote Request — OKC Insurance Brokers
 ================================================
 Submitted: ${new Date(submission.createdAt).toLocaleString('en-US', { timeZone: 'America/Chicago' })} CT
