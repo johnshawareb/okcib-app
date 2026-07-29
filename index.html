@@ -76,6 +76,7 @@ const Icon = ({ d, size = 20, className = '', style }) => (
 const CarIcon = (p) => <Icon {...p} d={<><path d="M3 20L12 4l9 16"/><path d="M12 14v6"/><path d="M12 4v4"/></>} />;
 const HomeIcon = (p) => <Icon {...p} d={<><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></>} />;
 const ShieldIcon = (p) => <Icon {...p} d={<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>} />;
+const BuildingIcon = (p) => <Icon {...p} d={<><rect width="16" height="20" x="4" y="2" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01M16 6h.01M8 10h.01M16 10h.01M8 14h.01M16 14h.01M12 6h.01M12 10h.01M12 14h.01"/></>} />;
 const PhoneIcon = (p) => <Icon {...p} d={<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.99 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.92 1.17h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>} />;
 const MailIcon = (p) => <Icon {...p} d={<><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></>} />;
 const StarIcon = (p) => <Icon {...p} d={<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>} />;
@@ -124,6 +125,7 @@ function Navbar({ navigate, page }) {
     { label: 'Home', to: '/' },
     { label: 'Auto Quote', to: '/auto-quote' },
     { label: 'Home Quote', to: '/home-quote' },
+    { label: 'HOA Quote', to: '/hoa-quote' },
     { label: 'About Us', to: '/about' },
   ];
   const go = (to) => { navigate(to); setOpen(false); };
@@ -203,7 +205,7 @@ function Footer({ navigate }) {
           <div>
             <h4 className="font-semibold text-white mb-4">Quick Links</h4>
             <ul className="space-y-2 text-sm text-slate-400">
-              {[['Home','/'],[`Auto Insurance`,'/auto-quote'],['Home Insurance','/home-quote'],['About Us','/about']].map(([l,t]) => (
+              {[['Home','/'],[`Auto Insurance`,'/auto-quote'],['Home Insurance','/home-quote'],['HOA & Condo Associations','/hoa-quote'],['About Us','/about']].map(([l,t]) => (
                 <li key={t}><button onClick={() => go(t)} className="hover:text-white transition-colors">{l}</button></li>
               ))}
             </ul>
@@ -328,12 +330,13 @@ function HomePage({ navigate }) {
       <section className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-black text-gray-900 mb-3">What We Cover</h2>
-          <p className="text-gray-500 max-w-xl mx-auto">One broker, multiple options — auto and home insurance for Oklahoma families.</p>
+          <p className="text-gray-500 max-w-xl mx-auto">One broker, multiple options — auto, home, and community association insurance for Oklahoma.</p>
         </div>
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[
             { icon: CarIcon, title: 'Auto Insurance', desc: 'Liability, collision, comprehensive, uninsured motorist, roadside assistance, and more — at the best rate from our carrier network.', features: ['Liability & Full Coverage','SR-22 / High-Risk Drivers','Multi-Car Discounts','New & Classic Vehicles'], cta: 'Get Auto Quote', to: '/auto-quote', btnStyle: {background:'#2563eb'}, btnClass: 'text-white', iconBg: 'bg-red-50', iconColor: 'text-red-600' },
             { icon: HomeIcon, title: 'Home Insurance', desc: 'Dwelling, personal property, liability, and loss-of-use coverage that protects your home from Oklahoma weather and beyond.', features: ['Dwelling & Structure','Tornado & Hail Coverage','Personal Property','Auto + Home Bundle Savings'], cta: 'Get Home Quote', to: '/home-quote', btnStyle: {background:'#f59e0b'}, btnClass: 'text-white', iconBg: 'bg-yellow-50', iconColor: 'text-yellow-600' },
+            { icon: BuildingIcon, title: 'HOA & Condo Associations', desc: 'Community association packages built for boards: property, general liability, directors & officers, and crime/fidelity coverage for your association.', features: ['Directors & Officers Liability','Common Area Property & GL','Crime / Fidelity Bond','Umbrella & Workers Comp'], cta: 'Get HOA Quote', to: '/hoa-quote', btnStyle: {background:'#059669'}, btnClass: 'text-white', iconBg: 'bg-emerald-50', iconColor: 'text-emerald-600' },
           ].map(({ icon: Ic, title, desc, features, cta, to, btnClass, btnStyle, iconBg, iconColor }) => (
             <div key={title} className="bg-white rounded-2xl shadow-md border border-gray-100 p-8 hover:shadow-lg transition-shadow">
               <div className={`${iconBg} rounded-2xl p-4 w-fit mb-5`}>
@@ -1208,6 +1211,397 @@ function HomeQuotePage({ navigate }) {
   );
 }
 
+// ─── HOA / COMMUNITY ASSOCIATION QUOTE ────────────────────────────────────────
+function HOAQuotePage({ navigate }) {
+  const steps = ['Association','Property','Board','Coverage','Contact'];
+  const [step, setStep] = useState(0);
+  const [form, setForm] = useState({
+    // Association
+    associationName:'', associationType:'', yearEstablished:'', unitCount:'',
+    address:'', address2:'', city:'', state:'Oklahoma', zip:'',
+    management:'', managementCompany:'', annualBudget:'', reserveBalance:'',
+    // Property / common areas
+    buildingCount:'', yearBuilt:'', stories:'', construction:'',
+    roofAge:'', roofMaterial:'', commonPropertyValue:'',
+    amenities:[], protection:[],
+    // Board & operations
+    boardMembers:'', hasEmployees:'', employeeCount:'', annualPayroll:'',
+    vendorCOI:'', vendors:[], rentedPercent:'', shortTermRentals:'',
+    delinquencies:'', priorClaims:'', priorClaimDetails:'',
+    fundControls:[], documentsAvailable:'',
+    // Coverage
+    coverageLines:[], glLimit:'', doLimit:'', crimeLimit:'',
+    propertyDeductible:'', windHailDeductible:'',
+    currentCarrier:'', expiringPremium:'', policyStartDate:'', lossHistory:'',
+    // Contact
+    contactName:'', contactRole:'', email:'', confirmEmail:'', phone:'',
+    heardAboutUs:'', contactPreference:'', textOptIn:'', notes:'',
+  });
+  const set = (k,v) => setForm(f=>({...f,[k]:v}));
+  const toggleIn = (k,val) => set(k, form[k].includes(val) ? form[k].filter(x=>x!==val) : [...form[k], val]);
+
+  const inp = 'w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-emerald-500 focus:outline-none';
+  const lbl = 'block text-sm font-semibold text-gray-700 mb-1';
+  const lbl2 = 'block text-sm font-semibold text-gray-700 mb-2';
+  const pill = (on) => `py-2 rounded-lg border-2 text-sm font-medium transition-all ${on?'border-emerald-500 bg-emerald-50 text-emerald-700':'border-gray-200 text-gray-600 hover:border-emerald-300'}`;
+
+  // Single-choice button group
+  const Choice = ({field, options, cols=3, small}) => (
+    <div className={`grid grid-cols-${cols} gap-2`}>
+      {options.map(o=>(
+        <button key={o} type="button" className={`${pill(form[field]===o)} ${small?'text-xs':''}`} onClick={()=>set(field,o)}>{o}</button>
+      ))}
+    </div>
+  );
+  // Multi-choice checkbox list
+  const Multi = ({field, options}) => (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      {options.map(o=>(
+        <label key={o} className={`flex items-center gap-3 p-2 rounded-lg border-2 cursor-pointer transition-all ${form[field].includes(o)?'border-emerald-400 bg-emerald-50':'border-gray-200 hover:border-emerald-300'}`}>
+          <input type="checkbox" className="accent-emerald-500" checked={form[field].includes(o)} onChange={()=>toggleIn(field,o)} />
+          <span className="text-sm font-medium text-gray-900">{o}</span>
+        </label>
+      ))}
+    </div>
+  );
+
+  const canNext = () => {
+    if (step===0) return form.associationName && form.associationType && form.unitCount && form.address && form.city && form.zip && form.management;
+    if (step===1) return form.buildingCount && form.yearBuilt && form.construction;
+    if (step===2) return form.boardMembers && form.hasEmployees && form.priorClaims;
+    if (step===3) return form.coverageLines.length > 0 && form.currentCarrier && form.policyStartDate;
+    if (step===4) return form.contactName && form.contactRole && form.email && form.confirmEmail && form.phone && form.contactPreference;
+    return true;
+  };
+
+  return (
+    <div className="min-h-screen py-10 px-4" style={{background:'linear-gradient(to bottom, #ecfdf5, white)'}}>
+      <div className="max-w-2xl mx-auto">
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center gap-2 text-white px-4 py-2 rounded-full text-sm font-semibold mb-3" style={{background:'#059669'}}>
+            <BuildingIcon size={16} /> HOA & Condo Association Quote
+          </div>
+          <h1 className="text-2xl font-black text-gray-900">Community Association Insurance Quote</h1>
+          <p className="text-gray-500 text-sm mt-1">Property, general liability, directors &amp; officers, and crime coverage for Oklahoma associations</p>
+        </div>
+        <StepIndicator steps={steps} current={step} color="emerald" />
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8 fade-in">
+
+          {step===0 && (
+            <div className="space-y-5">
+              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2"><BuildingIcon size={20} className="text-emerald-600" /> Association Information</h2>
+              <div>
+                <label className={lbl}>Association Name *</label>
+                <input className={inp} placeholder="e.g. Quail Creek Homeowners Association" value={form.associationName} onChange={e=>set('associationName',e.target.value)} />
+              </div>
+              <div>
+                <label className={lbl2}>Association Type *</label>
+                <Choice field="associationType" options={['HOA','Condo (COA)','Townhome','Master Association','Mixed-Use','Co-op']} small />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={lbl}>Number of Units *</label>
+                  <input className={inp} placeholder="e.g. 120" value={form.unitCount} onChange={e=>set('unitCount',e.target.value)} />
+                </div>
+                <div>
+                  <label className={lbl}>Year Established</label>
+                  <input className={inp} placeholder="e.g. 1998" maxLength={4} value={form.yearEstablished} onChange={e=>set('yearEstablished',e.target.value)} />
+                </div>
+              </div>
+              <div>
+                <label className={lbl}>Property Street Address *</label>
+                <input className={inp} placeholder="123 Community Drive" value={form.address} onChange={e=>set('address',e.target.value)} />
+              </div>
+              <div>
+                <label className={lbl}>Mailing Address / Suite (optional)</label>
+                <input className={inp} placeholder="c/o management company" value={form.address2} onChange={e=>set('address2',e.target.value)} />
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className={lbl}>City *</label>
+                  <input className={inp} placeholder="Oklahoma City" value={form.city} onChange={e=>set('city',e.target.value)} />
+                </div>
+                <div>
+                  <label className={lbl}>State</label>
+                  <input className={inp} value={form.state} onChange={e=>set('state',e.target.value)} />
+                </div>
+                <div>
+                  <label className={lbl}>ZIP *</label>
+                  <input className={inp} placeholder="73101" maxLength={5} value={form.zip} onChange={e=>set('zip',e.target.value)} />
+                </div>
+              </div>
+              <div>
+                <label className={lbl2}>How is the association managed? *</label>
+                <Choice field="management" options={['Self-Managed','Professional Management','Developer Controlled']} small />
+              </div>
+              {form.management==='Professional Management' && (
+                <div>
+                  <label className={lbl}>Management Company</label>
+                  <input className={inp} placeholder="Company name" value={form.managementCompany} onChange={e=>set('managementCompany',e.target.value)} />
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={lbl}>Annual Operating Budget</label>
+                  <input className={inp} placeholder="e.g. $250,000" value={form.annualBudget} onChange={e=>set('annualBudget',e.target.value)} />
+                </div>
+                <div>
+                  <label className={lbl}>Reserve Fund Balance</label>
+                  <input className={inp} placeholder="e.g. $100,000" value={form.reserveBalance} onChange={e=>set('reserveBalance',e.target.value)} />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {step===1 && (
+            <div className="space-y-5">
+              <h2 className="text-lg font-bold text-gray-900">Property &amp; Common Areas</h2>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className={lbl}>Buildings *</label>
+                  <input className={inp} placeholder="e.g. 8" value={form.buildingCount} onChange={e=>set('buildingCount',e.target.value)} />
+                </div>
+                <div>
+                  <label className={lbl}>Year Built *</label>
+                  <input className={inp} placeholder="e.g. 2001" maxLength={4} value={form.yearBuilt} onChange={e=>set('yearBuilt',e.target.value)} />
+                </div>
+                <div>
+                  <label className={lbl}>Stories</label>
+                  <input className={inp} placeholder="e.g. 2" value={form.stories} onChange={e=>set('stories',e.target.value)} />
+                </div>
+              </div>
+              <div>
+                <label className={lbl2}>Construction Type *</label>
+                <Choice field="construction" options={['Frame','Masonry','Joisted Masonry','Fire Resistive','Mixed']} small />
+              </div>
+              <div>
+                <label className={lbl2}>Roof Age</label>
+                <Choice field="roofAge" options={['< 5 yrs','5–10 yrs','10–15 yrs','15+ yrs']} cols={4} small />
+              </div>
+              <div>
+                <label className={lbl2}>Roof Material</label>
+                <Choice field="roofMaterial" options={['Asphalt','Metal','Tile','Flat/Membrane','Wood','Other']} small />
+              </div>
+              <div>
+                <label className={lbl}>Replacement Cost of Association-Owned Property</label>
+                <input className={inp} placeholder="e.g. $4,500,000 (buildings, clubhouse, fences, signage)" value={form.commonPropertyValue} onChange={e=>set('commonPropertyValue',e.target.value)} />
+                <p className="text-xs text-gray-500 mt-2">Cost to rebuild common property, not market value. Include anything the association is responsible for insuring under the governing documents.</p>
+              </div>
+              <div>
+                <label className={lbl2}>Common Area Amenities</label>
+                <Multi field="amenities" options={['Pool / Spa','Clubhouse','Fitness Center','Playground','Tennis / Pickleball','Walking Trails','Lake or Pond','Dock / Marina','Elevators','Gated Entry','Parking Garage','Storage Units']} />
+              </div>
+              <div>
+                <label className={lbl2}>Protective Features</label>
+                <Multi field="protection" options={['Fire Sprinklers','Fire / Smoke Alarms','Central Station Alarm','Security Cameras','Security Patrol','Storm Shelter','Backup Generator','Fire Hydrants On-Site']} />
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-xs text-blue-700 flex items-start gap-2">
+                <ShieldIcon size={14} className="shrink-0 mt-0.5" />
+                Oklahoma associations carry heavy wind and hail exposure. We'll compare percentage wind/hail deductibles across carriers so the board knows the real out-of-pocket cost of a storm.
+              </div>
+            </div>
+          )}
+
+          {step===2 && (
+            <div className="space-y-5">
+              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2"><UsersIcon size={20} className="text-emerald-600" /> Board &amp; Operations</h2>
+              <p className="text-sm text-gray-500">These questions drive directors &amp; officers, employment practices, and crime/fidelity pricing.</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={lbl}>Number of Board Members *</label>
+                  <input className={inp} placeholder="e.g. 5" value={form.boardMembers} onChange={e=>set('boardMembers',e.target.value)} />
+                </div>
+                <div>
+                  <label className={lbl}>% of Units Rented / Leased</label>
+                  <input className={inp} placeholder="e.g. 15%" value={form.rentedPercent} onChange={e=>set('rentedPercent',e.target.value)} />
+                </div>
+              </div>
+              <div>
+                <label className={lbl2}>Does the association have employees? *</label>
+                <Choice field="hasEmployees" options={['Yes','No']} cols={2} />
+              </div>
+              {form.hasEmployees==='Yes' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className={lbl}>Number of Employees</label>
+                    <input className={inp} placeholder="e.g. 4" value={form.employeeCount} onChange={e=>set('employeeCount',e.target.value)} />
+                  </div>
+                  <div>
+                    <label className={lbl}>Annual Payroll</label>
+                    <input className={inp} placeholder="e.g. $120,000" value={form.annualPayroll} onChange={e=>set('annualPayroll',e.target.value)} />
+                  </div>
+                </div>
+              )}
+              <div>
+                <label className={lbl2}>Contracted Vendors</label>
+                <Multi field="vendors" options={['Landscaping','Pool Service','Security / Gate','Property Management','Janitorial','Snow Removal','Maintenance / Repair','Trash Collection']} />
+              </div>
+              <div>
+                <label className={lbl2}>Are certificates of insurance required from all vendors?</label>
+                <Choice field="vendorCOI" options={['Yes','No','Sometimes']} />
+              </div>
+              <div>
+                <label className={lbl2}>Are short-term rentals (Airbnb/VRBO) allowed?</label>
+                <Choice field="shortTermRentals" options={['Yes','No','Restricted']} />
+              </div>
+              <div>
+                <label className={lbl2}>Assessment delinquencies or foreclosure actions in the past 3 years?</label>
+                <Choice field="delinquencies" options={['None','1–5 units','6+ units']} />
+              </div>
+              <div>
+                <label className={lbl2}>Financial controls in place</label>
+                <Multi field="fundControls" options={['Dual signatures required','Annual audit / review','Board approval over set dollar amount','Separate reserve account','Management company handles funds','Monthly financial statements to board']} />
+              </div>
+              <div>
+                <label className={lbl2}>Any claims, lawsuits, or demand letters against the association or board in the past 5 years? *</label>
+                <Choice field="priorClaims" options={['No','Yes','Threatened / possible']} />
+              </div>
+              {form.priorClaims!=='No' && form.priorClaims!=='' && (
+                <div>
+                  <label className={lbl}>Describe the claim(s)</label>
+                  <textarea className={`${inp} min-h-24`} placeholder="Type of claim (breach of contract, breach of fiduciary duty, CC&R violation, employment practices), date, status, and amounts involved" value={form.priorClaimDetails} onChange={e=>set('priorClaimDetails',e.target.value)} />
+                </div>
+              )}
+              <div>
+                <label className={lbl2}>Are the governing documents (CC&amp;Rs, bylaws) current and available?</label>
+                <Choice field="documentsAvailable" options={['Yes','No','Being updated']} />
+              </div>
+            </div>
+          )}
+
+          {step===3 && (
+            <div className="space-y-5">
+              <h2 className="text-lg font-bold text-gray-900">Coverage Needed</h2>
+              <div>
+                <label className={lbl2}>Which coverages should we quote? *</label>
+                <Multi field="coverageLines" options={['Property (Common Areas)','General Liability','Directors & Officers','Crime / Fidelity Bond','Umbrella / Excess Liability','Workers Compensation','Employment Practices Liability','Equipment Breakdown','Cyber Liability','Flood','Hired & Non-Owned Auto','Ordinance or Law']} />
+              </div>
+              <div>
+                <label className={lbl2}>General Liability Limit</label>
+                <Choice field="glLimit" options={['$500,000','$1,000,000','$2,000,000','Not sure']} cols={4} small />
+              </div>
+              <div>
+                <label className={lbl2}>Directors &amp; Officers Limit</label>
+                <Choice field="doLimit" options={['$500,000','$1,000,000','$2,000,000','Not sure']} cols={4} small />
+              </div>
+              <div>
+                <label className={lbl2}>Crime / Fidelity Limit</label>
+                <Choice field="crimeLimit" options={['$25,000','$50,000','$100,000','Not sure']} cols={4} small />
+              </div>
+              <p className="text-xs text-gray-500">Many governing documents and lender requirements set minimum fidelity limits — often the reserve balance plus three months of assessments. We'll check yours against the documents.</p>
+              <hr className="my-4" />
+              <div>
+                <label className={lbl2}>Property Deductible</label>
+                <Choice field="propertyDeductible" options={['$1,000','$2,500','$5,000','$10,000']} cols={4} small />
+              </div>
+              <div>
+                <label className={lbl2}>Wind / Hail Deductible (Oklahoma)</label>
+                <Choice field="windHailDeductible" options={['1%','2%','3%','5%']} cols={4} />
+              </div>
+              <div>
+                <label className={lbl2}>Does the association have current coverage? *</label>
+                <Choice field="currentCarrier" options={['Yes','No','New Association']} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={lbl}>Expiring Annual Premium</label>
+                  <input className={inp} placeholder="e.g. $18,500" value={form.expiringPremium} onChange={e=>set('expiringPremium',e.target.value)} />
+                </div>
+                <div>
+                  <label className={lbl}>Desired Effective Date *</label>
+                  <input type="date" className={inp} value={form.policyStartDate} onChange={e=>set('policyStartDate',e.target.value)} />
+                </div>
+              </div>
+              <div>
+                <label className={lbl}>Loss History (past 5 years)</label>
+                <textarea className={`${inp} min-h-24`} placeholder="Dates, types, and paid amounts — e.g. 2023 hail claim, roofs on 4 buildings, $210,000 paid" value={form.lossHistory} onChange={e=>set('lossHistory',e.target.value)} />
+              </div>
+            </div>
+          )}
+
+          {step===4 && (
+            <div className="space-y-5">
+              <h2 className="text-lg font-bold text-gray-900">Contact Information</h2>
+              <p className="text-sm text-gray-500">A licensed commercial agent will follow up with association options, usually the same business day.</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={lbl}>Contact Name *</label>
+                  <input className={inp} placeholder="First and last name" value={form.contactName} onChange={e=>set('contactName',e.target.value)} />
+                </div>
+                <div>
+                  <label className={lbl}>Role *</label>
+                  <select className={inp} value={form.contactRole} onChange={e=>set('contactRole',e.target.value)}>
+                    <option value="">Select</option>
+                    {['Board President','Vice President','Treasurer','Secretary','Board Member','Property Manager','Developer','Other'].map(r=><option key={r}>{r}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className={lbl}>Email *</label>
+                <input type="email" className={inp} placeholder="you@email.com" value={form.email} onChange={e=>set('email',e.target.value)} />
+              </div>
+              <div>
+                <label className={lbl}>Confirm Email *</label>
+                <input type="email" className={inp} placeholder="Confirm email" value={form.confirmEmail} onChange={e=>set('confirmEmail',e.target.value)} />
+              </div>
+              {form.email && form.confirmEmail && form.email !== form.confirmEmail && (
+                <p className="text-xs text-red-600 -mt-3">Email addresses don't match.</p>
+              )}
+              <div>
+                <label className={lbl}>Phone Number *</label>
+                <input type="tel" className={inp} placeholder="(405) 555-0100" value={form.phone} onChange={e=>set('phone',e.target.value)} />
+              </div>
+              <div>
+                <label className={lbl2}>Preferred Contact Method *</label>
+                <select className={inp} value={form.contactPreference} onChange={e=>set('contactPreference',e.target.value)}>
+                  <option value="">Select</option>
+                  {['Call','Email','Text','No preference'].map(p=><option key={p}>{p}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={lbl2}>How did you hear about us?</label>
+                <select className={inp} value={form.heardAboutUs} onChange={e=>set('heardAboutUs',e.target.value)}>
+                  <option value="">Select</option>
+                  {['Google Search','Facebook','Referral','Property Manager','Previous Customer','Other'].map(s=><option key={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={lbl2}>Opt in to text messages?</label>
+                <Choice field="textOptIn" options={['Yes','No']} cols={2} />
+              </div>
+              <div>
+                <label className={lbl}>Anything else we should know?</label>
+                <textarea className={`${inp} min-h-24`} placeholder="Upcoming projects, special assessments, lender requirements, renewal deadlines" value={form.notes} onChange={e=>set('notes',e.target.value)} />
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-xs text-blue-700">
+                Have your declaration page, loss runs, and governing documents handy — sending them along speeds up the quote. By submitting this form, you agree to be contacted by OKC Insurance Brokers. We never sell your information.
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-100">
+            {step>0 ? (
+              <button onClick={()=>setStep(s=>s-1)} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 font-medium">
+                <ChevronLeftIcon size={16} /> Back
+              </button>
+            ) : <div/>}
+            <button
+              onClick={async ()=>{ if(step<steps.length-1){ setStep(s=>s+1); window.scrollTo(0,0); } else { try{ await fetch('/api/quote',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...form,quoteType:'hoa'})}); }catch(e){} navigate('/thank-you?type=hoa'); } }}
+              disabled={!canNext()}
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all ${canNext()?'text-white shadow-md hover:opacity-90':'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
+              style={canNext()?{background:'#059669'}:{}}
+            >
+              {step===steps.length-1 ? 'Submit Quote Request' : 'Continue'}
+              <ChevronRightIcon size={16} />
+            </button>
+          </div>
+        </div>
+        <p className="text-center text-xs text-gray-400 mt-4">🔒 Secure &amp; confidential · Licensed Oklahoma insurance broker · OKCInsuranceBrokers.com</p>
+      </div>
+    </div>
+  );
+}
+
 // ─── ABOUT PAGE ───────────────────────────────────────────────────────────────
 function AboutPage({ navigate }) {
   return (
@@ -1298,7 +1692,7 @@ function AboutPage({ navigate }) {
 
 // ─── THANK YOU PAGE ───────────────────────────────────────────────────────────
 function ThankYouPage({ navigate, page }) {
-  const type = page.includes('home') ? 'home' : 'auto';
+  const type = page.includes('hoa') ? 'association' : page.includes('home') ? 'home' : 'auto';
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex items-center justify-center px-4 py-12">
       <div className="max-w-lg w-full text-center">
@@ -1359,6 +1753,7 @@ function App() {
   const renderPage = () => {
     if (page.startsWith('/auto-quote')) return <AutoQuotePage navigate={navigate} />;
     if (page.startsWith('/home-quote')) return <HomeQuotePage navigate={navigate} />;
+    if (page.startsWith('/hoa-quote')) return <HOAQuotePage navigate={navigate} />;
     if (page.startsWith('/about')) return <AboutPage navigate={navigate} />;
     if (page.startsWith('/thank-you')) return <ThankYouPage navigate={navigate} page={page} />;
     return <HomePage navigate={navigate} />;

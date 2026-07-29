@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HOA & Condo Association Quote Request | OKC Insurance Brokers</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .fade-in { animation: fadeIn .25s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body class="bg-white">
+<div id="hoa-form-root"></div>
+
+<script type="text/babel">
+const { useState } = React;
+
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+// Endpoint order of precedence: ?endpoint=  →  <body data-endpoint>  →  default.
+const params = new URLSearchParams(window.location.search);
+const ENDPOINT = params.get('endpoint') || document.body.dataset.endpoint || '/api/quote';
+const SOURCE = params.get('source') || 'agency-crm/forms/hoa-quote';
+
+// ─── FIELD SCHEMA ─────────────────────────────────────────────────────────────
+// Each step: { title, intro?, fields: [...] }
+// Field kinds: text, number, date, textarea, select, choice (single), multi (checkbox), note
+// `required: true` gates the Continue button. `showIf: (form) => bool` for conditionals.
+const SCHEMA = [
+  {
+    key: 'Association',
+    title: 'Association Information',
+    fields: [
+      { name: 'associationName', label: 'Association Name', kind: 'text', placeholder: 'e.g. Quail Creek Homeowners Association', required: true },
+      { name: 'associationType', label: 'Association Type', kind: 'choice', cols: 3, required: true,
+        options: ['HOA', 'Condo (COA)', 'Townhome', 'Master Association', 'Mixed-Use', 'Co-op'] },
+      { name: 'unitCount', label: 'Number of Units', kind: 'text', placeholder: 'e.g. 120', required: true, half: true },
+      { name: 'yearEstablished', label: 'Year Established', kind: 'text', placeholder: 'e.g. 1998', maxLength: 4, half: true },
+      { name: 'address', label: 'Property Street Address', kind: 'text', placeholder: '123 Community Drive', required: true },
+      { name: 'address2', label: 'Mailing Address / Suite (optional)', kind: 'text', placeholder: 'c/o management company' },
+      { name: 'city', label: 'City', kind: 'text', placeholder: 'Oklahoma City', required: true, third: true },
+      { name: 'state', label: 'State', kind: 'text', third: true },
+      { name: 'zip', label: 'ZIP', kind: 'text', placeholder: '73101', maxLength: 5, required: true, third: true },
+      { name: 'management', label: 'How is the association managed?', kind: 'choice', cols: 3, required: true,
+        options: ['Self-Managed', 'Professional Management', 'Developer Controlled'] },
+      { name: 'managementCompany', label: 'Management Company', kind: 'text', placeholder: 'Company name',
+        showIf: f => f.management === 'Professional Management' },
+      { name: 'annualBudget', label: 'Annual Operating Budget', kind: 'text', placeholder: 'e.g. $250,000', half: true },
+      { name: 'reserveBalance', label: 'Reserve Fund Balance', kind: 'text', placeholder: 'e.g. $100,000', half: true },
+    ],
+  },
+  {
+    key: 'Property',
+    title: 'Property & Common Areas',
+    fields: [
+      { name: 'buildingCount', label: 'Buildings', kind: 'text', placeholder: 'e.g. 8', required: true, third: true },
+      { name: 'yearBuilt', label: 'Year Built', kind: 'text', placeholder: 'e.g. 2001', maxLength: 4, required: true, third: true },
+      { name: 'stories', label: 'Stories', kind: 'text', placeholder: 'e.g. 2', third: true },
+      { name: 'construction', label: 'Construction Type', kind: 'choice', cols: 3, required: true,
+        options: ['Frame', 'Masonry', 'Joisted Masonry', 'Fire Resistive', 'Mixed'] },
+      { name: 'roofAge', label: 'Roof Age', kind: 'choice', cols: 4, options: ['< 5 yrs', '5–10 yrs', '10–15 yrs', '15+ yrs'] },
+      { name: 'roofMaterial', label: 'Roof Material', kind: 'choice', cols: 3, options: ['Asphalt', 'Metal', 'Tile', 'Flat/Membrane', 'Wood', 'Other'] },
+      { name: 'commonPropertyValue', label: 'Replacement Cost of Association-Owned Property', kind: 'text',
+        placeholder: 'e.g. $4,500,000 (buildings, clubhouse, fences, signage)',
+        help: 'Cost to rebuild common property, not market value. Include anything the association must insure under the governing documents.' },
+      { name: 'amenities', label: 'Common Area Amenities', kind: 'multi',
+        options: ['Pool / Spa', 'Clubhouse', 'Fitness Center', 'Playground', 'Tennis / Pickleball', 'Walking Trails', 'Lake or Pond', 'Dock / Marina', 'Elevators', 'Gated Entry', 'Parking Garage', 'Storage Units'] },
+      { name: 'protection', label: 'Protective Features', kind: 'multi',
+        options: ['Fire Sprinklers', 'Fire / Smoke Alarms', 'Central Station Alarm', 'Security Cameras', 'Security Patrol', 'Storm Shelter', 'Backup Generator', 'Fire Hydrants On-Site'] },
+      { kind: 'note', text: "Oklahoma associations carry heavy wind and hail exposure. We compare percentage wind/hail deductibles across carriers so the board knows the real out-of-pocket cost of a storm." },
+    ],
+  },
+  {
+    key: 'Board',
+    title: 'Board & Operations',
+    intro: 'These questions drive directors & officers, employment practices, and crime/fidelity pricing.',
+    fields: [
+      { name: 'boardMembers', label: 'Number of Board Members', kind: 'text', placeholder: 'e.g. 5', required: true, half: true },
+      { name: 'rentedPercent', label: '% of Units Rented / Leased', kind: 'text', placeholder: 'e.g. 15%', half: true },
+      { name: 'hasEmployees', label: 'Does the association have employees?', kind: 'choice', cols: 2, required: true, options: ['Yes', 'No'] },
+      { name: 'employeeCount', label: 'Number of Employees', kind: 'text', placeholder: 'e.g. 4', half: true, showIf: f => f.hasEmployees === 'Yes' },
+      { name: 'annualPayroll', label: 'Annual Payroll', kind: 'text', placeholder: 'e.g. $120,000', half: true, showIf: f => f.hasEmployees === 'Yes' },
+      { name: 'vendors', label: 'Contracted Vendors', kind: 'multi',
+        options: ['Landscaping', 'Pool Service', 'Security / Gate', 'Property Management', 'Janitorial', 'Snow Removal', 'Maintenance / Repair', 'Trash Collection'] },
+      { name: 'vendorCOI', label: 'Are certificates of insurance required from all vendors?', kind: 'choice', cols: 3, options: ['Yes', 'No', 'Sometimes'] },
+      { name: 'shortTermRentals', label: 'Are short-term rentals (Airbnb/VRBO) allowed?', kind: 'choice', cols: 3, options: ['Yes', 'No', 'Restricted'] },
+      { name: 'delinquencies', label: 'Assessment delinquencies or foreclosure actions in the past 3 years?', kind: 'choice', cols: 3, options: ['None', '1–5 units', '6+ units'] },
+      { name: 'fundControls', label: 'Financial controls in place', kind: 'multi',
+        options: ['Dual signatures required', 'Annual audit / review', 'Board approval over set dollar amount', 'Separate reserve account', 'Management company handles funds', 'Monthly financial statements to board'] },
+      { name: 'priorClaims', label: 'Any claims, lawsuits, or demand letters against the association or board in the past 5 years?', kind: 'choice', cols: 3, required: true,
+        options: ['No', 'Yes', 'Threatened / possible'] },
+      { name: 'priorClaimDetails', label: 'Describe the claim(s)', kind: 'textarea',
+        placeholder: 'Type of claim (breach of contract, breach of fiduciary duty, CC&R violation, employment practices), date, status, and amounts involved',
+        showIf: f => f.priorClaims === 'Yes' || f.priorClaims === 'Threatened / possible' },
+      { name: 'documentsAvailable', label: 'Are the governing documents (CC&Rs, bylaws) current and available?', kind: 'choice', cols: 3, options: ['Yes', 'No', 'Being updated'] },
+    ],
+  },
+  {
+    key: 'Coverage',
+    title: 'Coverage Needed',
+    fields: [
+      { name: 'coverageLines', label: 'Which coverages should we quote?', kind: 'multi', required: true,
+        options: ['Property (Common Areas)', 'General Liability', 'Directors & Officers', 'Crime / Fidelity Bond', 'Umbrella / Excess Liability', 'Workers Compensation', 'Employment Practices Liability', 'Equipment Breakdown', 'Cyber Liability', 'Flood', 'Hired & Non-Owned Auto', 'Ordinance or Law'] },
+      { name: 'glLimit', label: 'General Liability Limit', kind: 'choice', cols: 4, options: ['$500,000', '$1,000,000', '$2,000,000', 'Not sure'] },
+      { name: 'doLimit', label: 'Directors & Officers Limit', kind: 'choice', cols: 4, options: ['$500,000', '$1,000,000', '$2,000,000', 'Not sure'] },
+      { name: 'crimeLimit', label: 'Crime / Fidelity Limit', kind: 'choice', cols: 4, options: ['$25,000', '$50,000', '$100,000', 'Not sure'],
+        help: 'Governing documents and lender requirements often set a minimum fidelity limit — commonly the reserve balance plus three months of assessments. We check yours against the documents.' },
+      { name: 'propertyDeductible', label: 'Property Deductible', kind: 'choice', cols: 4, options: ['$1,000', '$2,500', '$5,000', '$10,000'] },
+      { name: 'windHailDeductible', label: 'Wind / Hail Deductible (Oklahoma)', kind: 'choice', cols: 4, options: ['1%', '2%', '3%', '5%'] },
+      { name: 'currentCarrier', label: 'Does the association have current coverage?', kind: 'choice', cols: 3, required: true, options: ['Yes', 'No', 'New Association'] },
+      { name: 'expiringPremium', label: 'Expiring Annual Premium', kind: 'text', placeholder: 'e.g. $18,500', half: true },
+      { name: 'policyStartDate', label: 'Desired Effective Date', kind: 'date', required: true, half: true },
+      { name: 'lossHistory', label: 'Loss History (past 5 years)', kind: 'textarea',
+        placeholder: 'Dates, types, and paid amounts — e.g. 2023 hail claim, roofs on 4 buildings, $210,000 paid' },
+    ],
+  },
+  {
+    key: 'Contact',
+    title: 'Contact Information',
+    intro: 'A licensed commercial agent will follow up with association options, usually the same business day.',
+    fields: [
+      { name: 'contactName', label: 'Contact Name', kind: 'text', placeholder: 'First and last name', required: true, half: true },
+      { name: 'contactRole', label: 'Role', kind: 'select', required: true, half: true,
+        options: ['Board President', 'Vice President', 'Treasurer', 'Secretary', 'Board Member', 'Property Manager', 'Developer', 'Other'] },
+      { name: 'email', label: 'Email', kind: 'text', type: 'email', placeholder: 'you@email.com', required: true },
+      { name: 'confirmEmail', label: 'Confirm Email', kind: 'text', type: 'email', placeholder: 'Confirm email', required: true },
+      { name: 'phone', label: 'Phone Number', kind: 'text', type: 'tel', placeholder: '(405) 555-0100', required: true },
+      { name: 'contactPreference', label: 'Preferred Contact Method', kind: 'select', required: true, options: ['Call', 'Email', 'Text', 'No preference'] },
+      { name: 'heardAboutUs', label: 'How did you hear about us?', kind: 'select', options: ['Google Search', 'Facebook', 'Referral', 'Property Manager', 'Previous Customer', 'Other'] },
+      { name: 'textOptIn', label: 'Opt in to text messages?', kind: 'choice', cols: 2, options: ['Yes', 'No'] },
+      { name: 'notes', label: 'Anything else we should know?', kind: 'textarea', placeholder: 'Upcoming projects, special assessments, lender requirements, renewal deadlines' },
+      { kind: 'note', text: 'Have the declaration page, loss runs, and governing documents handy — sending them along speeds up the quote. By submitting this form, you agree to be contacted by OKC Insurance Brokers. We never sell your information.' },
+    ],
+  },
+];
+
+const DEFAULTS = (() => {
+  const out = { state: 'Oklahoma' };
+  SCHEMA.forEach(s => s.fields.forEach(f => {
+    if (!f.name || out[f.name] !== undefined) return;
+    out[f.name] = f.kind === 'multi' ? [] : '';
+  }));
+  return out;
+})();
+
+// ─── UI ───────────────────────────────────────────────────────────────────────
+const INPUT = 'w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-emerald-500 focus:outline-none';
+const COLS = { 2: 'grid-cols-2', 3: 'grid-cols-3', 4: 'grid-cols-4' };
+
+function StepIndicator({ steps, current }) {
+  return (
+    <div className="flex items-center justify-center gap-2 mb-8">
+      {steps.map((s, i) => (
+        <div key={s} className="flex items-center gap-2">
+          <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold
+            ${i < current ? 'bg-green-500 text-white' : i === current ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-400'}`}>
+            {i < current ? '✓' : i + 1}
+          </div>
+          <span className={`text-xs font-medium hidden sm:block ${i === current ? 'text-emerald-700' : 'text-gray-400'}`}>{s}</span>
+          {i < steps.length - 1 && <div className={`w-8 h-0.5 ${i < current ? 'bg-green-500' : 'bg-gray-200'}`} />}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Field({ field, form, set }) {
+  const { kind, name, label, help } = field;
+
+  if (kind === 'note') {
+    return <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-xs text-blue-700">{field.text}</div>;
+  }
+
+  const labelEl = label && (
+    <label className={`block text-sm font-semibold text-gray-700 ${kind === 'choice' || kind === 'multi' ? 'mb-2' : 'mb-1'}`}>
+      {label}{field.required && ' *'}
+    </label>
+  );
+  const helpEl = help && <p className="text-xs text-gray-500 mt-2">{help}</p>;
+
+  let control;
+  if (kind === 'choice') {
+    control = (
+      <div className={`grid ${COLS[field.cols] || 'grid-cols-3'} gap-2`}>
+        {field.options.map(o => (
+          <button key={o} type="button" onClick={() => set(name, form[name] === o ? '' : o)}
+            className={`py-2 rounded-lg border-2 text-xs sm:text-sm font-medium transition-all ${form[name] === o
+              ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+              : 'border-gray-200 text-gray-600 hover:border-emerald-300'}`}>{o}</button>
+        ))}
+      </div>
+    );
+  } else if (kind === 'multi') {
+    const toggle = o => set(name, form[name].includes(o) ? form[name].filter(x => x !== o) : [...form[name], o]);
+    control = (
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {field.options.map(o => (
+          <label key={o} className={`flex items-center gap-3 p-2 rounded-lg border-2 cursor-pointer transition-all ${form[name].includes(o)
+            ? 'border-emerald-400 bg-emerald-50' : 'border-gray-200 hover:border-emerald-300'}`}>
+            <input type="checkbox" className="accent-emerald-500" checked={form[name].includes(o)} onChange={() => toggle(o)} />
+            <span className="text-sm font-medium text-gray-900">{o}</span>
+          </label>
+        ))}
+      </div>
+    );
+  } else if (kind === 'select') {
+    control = (
+      <select className={INPUT} value={form[name]} onChange={e => set(name, e.target.value)}>
+        <option value="">Select</option>
+        {field.options.map(o => <option key={o}>{o}</option>)}
+      </select>
+    );
+  } else if (kind === 'textarea') {
+    control = <textarea className={`${INPUT} min-h-24`} placeholder={field.placeholder} value={form[name]} onChange={e => set(name, e.target.value)} />;
+  } else {
+    control = <input className={INPUT} type={field.type || (kind === 'date' ? 'date' : 'text')} placeholder={field.placeholder}
+      maxLength={field.maxLength} value={form[name]} onChange={e => set(name, e.target.value)} />;
+  }
+
+  return <div>{labelEl}{control}{helpEl}</div>;
+}
+
+function HOAQuoteForm() {
+  const [step, setStep] = useState(0);
+  const [form, setForm] = useState(DEFAULTS);
+  const [state, setState] = useState('editing'); // editing | sending | sent | error
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const steps = SCHEMA.map(s => s.key);
+  const current = SCHEMA[step];
+  const visible = current.fields.filter(f => !f.showIf || f.showIf(form));
+
+  const emailMismatch = form.email && form.confirmEmail && form.email !== form.confirmEmail;
+  const canNext = visible.every(f => {
+    if (!f.required || !f.name) return true;
+    const v = form[f.name];
+    return Array.isArray(v) ? v.length > 0 : !!v;
+  }) && !(step === SCHEMA.length - 1 && emailMismatch);
+
+  const submit = async () => {
+    setState('sending');
+    try {
+      const res = await fetch(ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, quoteType: 'hoa', source: SOURCE, submittedAt: new Date().toISOString() }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setState('sent');
+      window.scrollTo(0, 0);
+    } catch (e) {
+      setState('error');
+    }
+  };
+
+  if (state === 'sent') {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 py-12" style={{ background: 'linear-gradient(to bottom, #ecfdf5, white)' }}>
+        <div className="max-w-lg w-full text-center bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+          <div className="text-4xl mb-4">✅</div>
+          <h1 className="text-2xl font-black text-gray-900 mb-2">Quote Request Received</h1>
+          <p className="text-gray-600 text-sm mb-6">
+            Thanks — a licensed commercial agent will review {form.associationName || 'your association'} and follow up, typically the same business day.
+          </p>
+          <a href="tel:+14055099433" className="inline-block font-bold text-emerald-700">Need it sooner? Call (405) 509-9433</a>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen py-10 px-4" style={{ background: 'linear-gradient(to bottom, #ecfdf5, white)' }}>
+      <div className="max-w-2xl mx-auto">
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center gap-2 text-white px-4 py-2 rounded-full text-sm font-semibold mb-3" style={{ background: '#059669' }}>
+            🏢 HOA &amp; Condo Association Quote
+          </div>
+          <h1 className="text-2xl font-black text-gray-900">Community Association Insurance Quote</h1>
+          <p className="text-gray-500 text-sm mt-1">Property, general liability, directors &amp; officers, and crime coverage for Oklahoma associations</p>
+        </div>
+
+        <StepIndicator steps={steps} current={step} />
+
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8 fade-in">
+          <h2 className="text-lg font-bold text-gray-900 mb-1">{current.title}</h2>
+          {current.intro && <p className="text-sm text-gray-500 mb-4">{current.intro}</p>}
+
+          <div className="space-y-5">
+            {(() => {
+              // Group consecutive half/third fields into one row.
+              const rows = [];
+              visible.forEach(f => {
+                const width = f.half ? 2 : f.third ? 3 : 1;
+                const last = rows[rows.length - 1];
+                if (width > 1 && last && last.width === width && last.items.length < width) last.items.push(f);
+                else rows.push({ width, items: [f] });
+              });
+              return rows.map((row, i) => row.width === 1
+                ? <Field key={i} field={row.items[0]} form={form} set={set} />
+                : (
+                  <div key={i} className={`grid ${COLS[row.width]} gap-4`}>
+                    {row.items.map(f => <Field key={f.name} field={f} form={form} set={set} />)}
+                  </div>
+                ));
+            })()}
+            {step === SCHEMA.length - 1 && emailMismatch && (
+              <p className="text-xs text-red-600">Email addresses don't match.</p>
+            )}
+            {state === 'error' && (
+              <p className="text-sm text-red-600">
+                We couldn't submit the form. Please try again, or call (405) 509-9433 and we'll take the details by phone.
+              </p>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-100">
+            {step > 0
+              ? <button onClick={() => setStep(s => s - 1)} className="text-sm text-gray-500 hover:text-gray-700 font-medium">← Back</button>
+              : <div />}
+            <button
+              onClick={() => { if (step < SCHEMA.length - 1) { setStep(s => s + 1); window.scrollTo(0, 0); } else submit(); }}
+              disabled={!canNext || state === 'sending'}
+              className={`px-6 py-3 rounded-xl font-semibold text-sm transition-all ${canNext && state !== 'sending'
+                ? 'text-white shadow-md hover:opacity-90' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
+              style={canNext && state !== 'sending' ? { background: '#059669' } : {}}>
+              {state === 'sending' ? 'Submitting…' : step === SCHEMA.length - 1 ? 'Submit Quote Request' : 'Continue →'}
+            </button>
+          </div>
+        </div>
+        <p className="text-center text-xs text-gray-400 mt-4">🔒 Secure &amp; confidential · Licensed Oklahoma insurance broker · OKCInsuranceBrokers.com</p>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('hoa-form-root')).render(<HOAQuoteForm />);
+</script>
+</body>
+</html>

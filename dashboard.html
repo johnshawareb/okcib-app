@@ -108,8 +108,11 @@ async function loadSubmissions() {
     }
 
     list.innerHTML = subs.map(s => {
-      const name = s.data.name || `${s.data.firstName || ''} ${s.data.lastName || ''}`.trim() || 'Unknown';
-      const type = s.data.coverageType === 'home' ? '🏠' : '🚗';
+      const isHOA = s.data.quoteType === 'hoa';
+      const name = isHOA
+        ? (s.data.associationName || s.data.contactName || 'Unknown Association')
+        : (s.data.name || `${s.data.firstName || ''} ${s.data.lastName || ''}`.trim() || 'Unknown');
+      const type = isHOA ? '🏢' : (s.data.quoteType === 'home' || s.data.coverageType === 'home') ? '🏠' : '🚗';
       const statusColor = { pending: 'text-yellow-400', running: 'text-blue-400 pulse', complete: 'text-green-400', error: 'text-red-400' }[s.status] || 'text-gray-400';
       const statusLabel = { pending: 'Pending', running: 'Agent Running...', complete: 'Quoted', error: 'Error' }[s.status] || s.status;
       const isSelected = s.id === selectedId;
@@ -143,7 +146,12 @@ async function selectSubmission(id) {
 
 function renderDetail(sub) {
   const d = sub.data;
-  const name = d.name || `${d.firstName || ''} ${d.lastName || ''}`.trim() || 'Unknown';
+  const isHOA = d.quoteType === 'hoa';
+  const name = isHOA
+    ? (d.associationName || d.contactName || 'Unknown Association')
+    : (d.name || `${d.firstName || ''} ${d.lastName || ''}`.trim() || 'Unknown');
+  const cell = (label, value) => value ? `<div class="bg-gray-800 rounded-lg p-3"><div class="text-xs text-gray-400">${label}</div><div class="text-sm text-white font-medium">${value}</div></div>` : '';
+  const listOf = (v) => Array.isArray(v) && v.length ? v.join(', ') : '';
 
   const carrierColors = {
     'Progressive': '#0066CC', 'GEICO': '#00843D', 'Mercury': '#C8202F',
@@ -171,18 +179,32 @@ function renderDetail(sub) {
       <div class="flex items-start justify-between mb-5">
         <div>
           <h3 class="text-lg font-bold text-white">${name}</h3>
-          <div class="text-xs text-gray-400 mt-0.5">${d.email || ''} · ${d.phone || ''} · ${d.zip || ''}</div>
+          <div class="text-xs text-gray-400 mt-0.5">${isHOA && d.contactName ? `${d.contactName}${d.contactRole ? ` (${d.contactRole})` : ''} · ` : ''}${d.email || ''} · ${d.phone || ''} · ${d.zip || ''}</div>
         </div>
         <span class="text-xs px-2 py-1 rounded-full bg-gray-800 text-gray-300 capitalize">${sub.status}</span>
       </div>
 
       <!-- Customer info -->
       <div class="grid grid-cols-2 gap-3 mb-4">
+        ${isHOA ? [
+          cell('Association Type', d.associationType),
+          cell('Units', d.unitCount),
+          cell('Buildings', `${d.buildingCount || '?'}${d.yearBuilt ? ` · built ${d.yearBuilt}` : ''}`),
+          cell('Management', d.management === 'Professional Management' && d.managementCompany ? d.managementCompany : d.management),
+          cell('Coverages Requested', listOf(d.coverageLines)),
+          cell('Limits', [d.glLimit && `GL ${d.glLimit}`, d.doLimit && `D&O ${d.doLimit}`, d.crimeLimit && `Crime ${d.crimeLimit}`].filter(Boolean).join(' · ')),
+          cell('Deductibles', [d.propertyDeductible && `Property ${d.propertyDeductible}`, d.windHailDeductible && `Wind/Hail ${d.windHailDeductible}`].filter(Boolean).join(' · ')),
+          cell('Current Coverage', d.currentCarrier),
+          cell('Expiring Premium', d.expiringPremium),
+          cell('Effective Date', d.policyStartDate),
+          cell('Prior Claims', d.priorClaims),
+          cell('Loss History', d.lossHistory),
+        ].join('') : ''}
         ${d.year ? `<div class="bg-gray-800 rounded-lg p-3"><div class="text-xs text-gray-400">Vehicle</div><div class="text-sm text-white font-medium">${d.year} ${d.make} ${d.model}</div></div>` : ''}
         ${d.coverageType ? `<div class="bg-gray-800 rounded-lg p-3"><div class="text-xs text-gray-400">Coverage</div><div class="text-sm text-white font-medium capitalize">${d.coverageType}</div></div>` : ''}
         ${d.dob ? `<div class="bg-gray-800 rounded-lg p-3"><div class="text-xs text-gray-400">Date of Birth</div><div class="text-sm text-white font-medium">${d.dob}</div></div>` : ''}
         ${d.incidents ? `<div class="bg-gray-800 rounded-lg p-3"><div class="text-xs text-gray-400">Prior Incidents</div><div class="text-sm text-white font-medium">${d.incidents}</div></div>` : ''}
-        ${d.currentCarrier ? `<div class="bg-gray-800 rounded-lg p-3"><div class="text-xs text-gray-400">Current Carrier</div><div class="text-sm text-white font-medium">${d.currentCarrier}</div></div>` : ''}
+        ${!isHOA && d.currentCarrier ? `<div class="bg-gray-800 rounded-lg p-3"><div class="text-xs text-gray-400">Current Carrier</div><div class="text-sm text-white font-medium">${d.currentCarrier}</div></div>` : ''}
         ${d.deductible ? `<div class="bg-gray-800 rounded-lg p-3"><div class="text-xs text-gray-400">Deductible</div><div class="text-sm text-white font-medium">$${d.deductible}</div></div>` : ''}
       </div>
 
