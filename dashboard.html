@@ -88,6 +88,18 @@
 <script>
 let selectedId = null;
 let eventSource = null;
+let formSchemas = {};   // quoteType -> schema from agency-crm/forms/forms.config.json
+
+// Detail panels for schema-driven forms are rendered from the same config the form
+// uses, so new questions show up here without touching this file.
+async function loadFormSchemas() {
+  try {
+    const res = await fetch('/agency-crm/forms/forms.config.json');
+    if (!res.ok) return;
+    const config = await res.json();
+    (config.forms || []).forEach(f => { if (f.steps) formSchemas[f.quoteType] = f; });
+  } catch (e) { /* detail panel falls back to generic rendering */ }
+}
 
 // ─── Load submissions ─────────────────────────────────────────────────────────
 async function loadSubmissions() {
@@ -108,8 +120,11 @@ async function loadSubmissions() {
     }
 
     list.innerHTML = subs.map(s => {
-      const name = s.data.name || `${s.data.firstName || ''} ${s.data.lastName || ''}`.trim() || 'Unknown';
-      const type = s.data.coverageType === 'home' ? '🏠' : '🚗';
+      const isHOA = s.data.quoteType === 'hoa';
+      const name = isHOA
+        ? (s.data.associationName || s.data.contactName || 'Unknown Association')
+        : (s.data.name || `${s.data.firstName || ''} ${s.data.lastName || ''}`.trim() || 'Unknown');
+      const type = isHOA ? '🏢' : (s.data.quoteType === 'home' || s.data.coverageType === 'home') ? '🏠' : '🚗';
       const statusColor = { pending: 'text-yellow-400', running: 'text-blue-400 pulse', complete: 'text-green-400', error: 'text-red-400' }[s.status] || 'text-gray-400';
       const statusLabel = { pending: 'Pending', running: 'Agent Running...', complete: 'Quoted', error: 'Error' }[s.status] || s.status;
       const isSelected = s.id === selectedId;
@@ -120,7 +135,7 @@ async function loadSubmissions() {
             <span class="font-semibold text-sm text-white">${type} ${name}</span>
             <span class="text-xs ${statusColor}">${statusLabel}</span>
           </div>
-          <div class="text-xs text-gray-500">${s.data.zip || ''} · ${new Date(s.createdAt).toLocaleDateString()} ${new Date(s.createdAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>
+          <div class="text-xs text-gray-500">${s.data.locationZip || s.data.zip || ''} · ${new Date(s.createdAt).toLocaleDateString()} ${new Date(s.createdAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>
           ${s.quotes && s.quotes.length > 0 ? `<div class="text-xs text-green-400 mt-1">${s.quotes.filter(q=>q.success).length} quote${s.quotes.filter(q=>q.success).length!==1?'s':''} obtained</div>` : ''}
         </button>`;
     }).join('');
@@ -143,7 +158,31 @@ async function selectSubmission(id) {
 
 function renderDetail(sub) {
   const d = sub.data;
-  const name = d.name || `${d.firstName || ''} ${d.lastName || ''}`.trim() || 'Unknown';
+  const isHOA = d.quoteType === 'hoa';
+  const name = isHOA
+    ? (d.associationName || d.contactName || 'Unknown Association')
+    : (d.name || `${d.firstName || ''} ${d.lastName || ''}`.trim() || 'Unknown');
+  const cell = (label, value) => value ? `<div class="bg-gray-800 rounded-lg p-3"><div class="text-xs text-gray-400">${label}</div><div class="text-sm text-white font-medium">${value}</div></div>` : '';
+  const listOf = (v) => Array.isArray(v) && v.length ? v.join(', ') : '';
+  const filled = v => Array.isArray(v) ? v.length > 0 : v !== undefined && v !== null && String(v).trim() !== '';
+
+  // Schema-driven sections: one block per step, answered questions only.
+  const schema = formSchemas[d.quoteType];
+  const schemaHtml = !schema ? '' : schema.steps.map(step => {
+    const answered = step.fields.filter(f => f.name && filled(d[f.name]));
+    if (!answered.length) return '';
+    return `
+      <div class="mb-4">
+        <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">${step.title}</h4>
+        <div class="space-y-1.5">
+          ${answered.map(f => `
+            <div class="bg-gray-800 rounded-lg px-3 py-2">
+              <div class="text-xs text-gray-400">${f.label}</div>
+              <div class="text-sm text-white font-medium">${listOf(d[f.name]) || d[f.name]}</div>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  }).join('');
 
   const carrierColors = {
     'Progressive': '#0066CC', 'GEICO': '#00843D', 'Mercury': '#C8202F',
@@ -171,10 +210,12 @@ function renderDetail(sub) {
       <div class="flex items-start justify-between mb-5">
         <div>
           <h3 class="text-lg font-bold text-white">${name}</h3>
-          <div class="text-xs text-gray-400 mt-0.5">${d.email || ''} · ${d.phone || ''} · ${d.zip || ''}</div>
+          <div class="text-xs text-gray-400 mt-0.5">${isHOA && d.contactName ? `${d.contactName}${d.contactTitle || d.contactRole ? ` (${d.contactTitle || d.contactRole})` : ''} · ` : ''}${d.email || ''} · ${d.phone || ''} · ${d.locationZip || d.zip || ''}</div>
         </div>
         <span class="text-xs px-2 py-1 rounded-full bg-gray-800 text-gray-300 capitalize">${sub.status}</span>
       </div>
+
+      ${schemaHtml}
 
       <!-- Customer info -->
       <div class="grid grid-cols-2 gap-3 mb-4">
@@ -182,11 +223,11 @@ function renderDetail(sub) {
         ${d.coverageType ? `<div class="bg-gray-800 rounded-lg p-3"><div class="text-xs text-gray-400">Coverage</div><div class="text-sm text-white font-medium capitalize">${d.coverageType}</div></div>` : ''}
         ${d.dob ? `<div class="bg-gray-800 rounded-lg p-3"><div class="text-xs text-gray-400">Date of Birth</div><div class="text-sm text-white font-medium">${d.dob}</div></div>` : ''}
         ${d.incidents ? `<div class="bg-gray-800 rounded-lg p-3"><div class="text-xs text-gray-400">Prior Incidents</div><div class="text-sm text-white font-medium">${d.incidents}</div></div>` : ''}
-        ${d.currentCarrier ? `<div class="bg-gray-800 rounded-lg p-3"><div class="text-xs text-gray-400">Current Carrier</div><div class="text-sm text-white font-medium">${d.currentCarrier}</div></div>` : ''}
+        ${!isHOA && d.currentCarrier ? `<div class="bg-gray-800 rounded-lg p-3"><div class="text-xs text-gray-400">Current Carrier</div><div class="text-sm text-white font-medium">${d.currentCarrier}</div></div>` : ''}
         ${d.deductible ? `<div class="bg-gray-800 rounded-lg p-3"><div class="text-xs text-gray-400">Deductible</div><div class="text-sm text-white font-medium">$${d.deductible}</div></div>` : ''}
       </div>
 
-      ${d.notes ? `<div class="bg-gray-800 rounded-lg p-3 mb-4"><div class="text-xs text-gray-400 mb-1">Notes</div><div class="text-sm text-gray-300">${d.notes}</div></div>` : ''}
+      ${!schema && d.notes ? `<div class="bg-gray-800 rounded-lg p-3 mb-4"><div class="text-xs text-gray-400 mb-1">Notes</div><div class="text-sm text-gray-300">${d.notes}</div></div>` : ''}
 
       <!-- Agent log -->
       <div id="agent-log" class="bg-gray-950 rounded-xl border border-gray-800 p-3 mb-4 min-h-16 max-h-48 overflow-y-auto text-xs font-mono space-y-1 hidden"></div>
@@ -267,7 +308,7 @@ async function copyData(id) {
 }
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
-loadSubmissions();
+loadFormSchemas().then(loadSubmissions);
 setInterval(loadSubmissions, 15000); // auto-refresh every 15s
 </script>
 </body>

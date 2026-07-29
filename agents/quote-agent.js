@@ -50,6 +50,13 @@ const CARRIERS = [
  * @param {function} emit - Callback for real-time status events
  */
 export async function runQuoteAgent(formData, emit) {
+  // The carrier portals below are personal lines only — community association business
+  // is placed manually through commercial markets (Travelers, etc.).
+  if (formData.quoteType === 'hoa') {
+    emit({ type: 'error', message: 'HOA / community association quotes are commercial lines — submit to a commercial market manually.' });
+    return;
+  }
+
   emit({ type: 'start', message: `Starting quote agent for ${formData.name || 'customer'}` });
 
   const browser = await chromium.launch({

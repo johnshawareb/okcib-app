@@ -7,6 +7,7 @@ import { createTransport } from 'nodemailer';
 import multer from 'multer';
 import { config } from 'dotenv';
 import { runQuoteAgent } from './agents/quote-agent.js';
+import { loadFormSchema, schemaEmailBody } from './lib/lead-email.js';
 
 config();
 
@@ -58,10 +59,15 @@ const mailer = createTransport({
 async function sendSubmissionEmail(submission) {
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) return;
   const d = submission.data;
-  const name = d.name || `${d.firstName || ''} ${d.lastName || ''}`.trim() || 'Unknown';
-  const type = d.quoteType === 'home' ? '🏠 Home' : '🚗 Auto';
+  const isHOA = d.quoteType === 'hoa';
+  const name = isHOA
+    ? (d.associationName || d.contactName || 'Unknown Association')
+    : (d.name || `${d.firstName || ''} ${d.lastName || ''}`.trim() || 'Unknown');
+  const type = isHOA ? '🏢 HOA' : d.quoteType === 'home' ? '🏠 Home' : '🚗 Auto';
 
-  const body = `
+  const hoaSchema = isHOA ? loadFormSchema('hoa') : null;
+  const dashboardUrl = `http://localhost:${process.env.PORT || 3000}/dashboard.html`;
+  const body = hoaSchema ? schemaEmailBody(d, submission, hoaSchema, { dashboardUrl }) : `
 New ${type} Quote Request — OKC Insurance Brokers
 ================================================
 Submitted: ${new Date(submission.createdAt).toLocaleString('en-US', { timeZone: 'America/Chicago' })} CT
