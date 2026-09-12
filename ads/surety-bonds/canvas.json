@@ -1,0 +1,72 @@
+{
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1200,
+      "h": 628
+    },
+    {
+      "file": "Contractor.dc.html",
+      "x": 1300,
+      "y": 0,
+      "w": 1200,
+      "h": 628
+    },
+    {
+      "file": "Notary.dc.html",
+      "x": 2600,
+      "y": 0,
+      "w": 1200,
+      "h": 628
+    },
+    {
+      "file": "Title.dc.html",
+      "x": 0,
+      "y": 780,
+      "w": 1200,
+      "h": 628
+    },
+    {
+      "file": "Court.dc.html",
+      "x": 1300,
+      "y": 780,
+      "w": 1200,
+      "h": 628
+    },
+    {
+      "file": "DirectionB.dc.html",
+      "x": 0,
+      "y": 1560,
+      "w": 1200,
+      "h": 628
+    },
+    {
+      "file": "DirectionC.dc.html",
+      "x": 1300,
+      "y": 1560,
+      "w": 1200,
+      "h": 628
+    }
+  ],
+  "annotations": [
+    {
+      "id": "research",
+      "x": 0,
+      "y": -300,
+      "w": 520,
+      "text": "WHAT OKLAHOMA IS BUYING (research, Sep 2026)\n1. Used motor vehicle dealer bond: $25,000 (rebuilders $15,000). Your #1 bond line already.\n2. CIB contractor license bond: $5,000 continuous, all CIB trades incl. roofing (HB 1628 roofing endorsement drives new registrations). Board also requires $50K GL: cross sell.\n3. Notary bond: raised to $10,000 on Jan 1, 2026 (was $1,000). Every renewal needs the new amount.\n4. Lost title bonds: steady walk in demand from Service Oklahoma.\n5. Court bonds: probate, guardianship, appeal. Attorney referral play.\nMarkets: RLI (40% commission), Bond Exchange, Ashton, Travelers."
+    },
+    {
+      "id": "links",
+      "x": 560,
+      "y": -300,
+      "w": 520,
+      "text": "PURCHASE LINK: no bond specific form exists yet. All buttons point to okcinsurancebrokers.com/bond-insurance/ plus (405) 509-9433.\nRecommended: add a free Jotform \"Surety Bond Application\" (3 of 5 slots used) and swap the button URL before posting.\nRow 1 and 2: the five ads (1200x628 for Facebook and LinkedIn link posts). Row 3: two alternate looks for the same dealer ad."
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  }
+}
